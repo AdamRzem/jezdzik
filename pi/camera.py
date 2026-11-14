@@ -1,4 +1,4 @@
-"""Synthetic frame metadata only. No picamera2, encoder, pixels or RTSP ingest yet."""
+"""Capture clock, frame metadata and pixel stamp shared by sensor producers."""
 
 import asyncio
 import time
@@ -39,6 +39,7 @@ class Frame:
 
 
 class StubCamera:
+    # REAL DATA INPUT: replace this generator with timestamped picamera2 captures.
     def __init__(self, settings: dict):
         self.fps = settings["fps"]
         self.exposure_us = settings["exposure_us"]

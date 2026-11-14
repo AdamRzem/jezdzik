@@ -1,5 +1,5 @@
 [Unit]
-Description=Rover AR pose service (hardware stub)
+Description=Rover AR sensor/pose/video service
 After=network-online.target mediamtx.service
 Wants=network-online.target
 Before=caddy.service

@@ -2,7 +2,7 @@
 
 A local rover camera viewer built with SvelteKit, Three.js and browser workers.
 Implements the browser side of [the implementation plan](implementation.md),
-with a deliberately stubbed Raspberry Pi service in [`pi/`](pi/README.md).
+with a Python mock sensor pipeline in [`pi/`](pi/README.md).
 
 ## Run locally
 
@@ -41,9 +41,14 @@ Pi's Caddy HTTPS origin, or set separate pose and MediaMTX origins with
 The browser always uses its own origin, so HTTPS and WebSocket proxying stay
 consistent. Video media travels directly from MediaMTX over UDP 8189.
 
-The Pi stub emits stationary `q: 0` poses and shared reset epochs. It does **not**
-publish video or access hardware. See [`pi/README.md`](pi/README.md) to run it.
-No hardware is needed to explore the frontend demo.
+The Python service can supply mock sensor data through these same rover
+interfaces. Run MediaMTX and `pi/rover_ar.py` with `mode: mock`, then select
+**Connect rover**. Python sends moving poses over `/ws` and stamped H.264 camera
+video through MediaMTX; the existing browser workers detect markers and estimate
+depth from its pixels. Mock selection is entirely on the backend, and the video
+is watermarked as simulated. See [`pi/README.md`](pi/README.md) for dependencies,
+setup and the marked **REAL DATA INPUT** integration points. `mode: stub` retains
+the original pose-only behavior. The browser demo needs neither service.
 
 ## Install browser assets
 
@@ -121,7 +126,7 @@ be trusted on viewer devices for a secure WebGPU context. No service installatio
 or deployment is performed by this implementation.
 
 Hardware camera capture/encoding, IMU fusion, floor visual odometry, immutable
-landmarks and drift correction remain deferred inside the Pi stub. Sensor
+landmarks and drift correction remain deferred for real hardware. Sensor
 calibration, hall tracking/depth feasibility gates, real transport latency and
 on-device performance still require the physical rover. The software tests and
 demo do not mark those hardware acceptance criteria as passed.

@@ -12,9 +12,9 @@ class Orientation:
 
 class StubIMU:
     def orientation_at(self, timestamp_ns: int) -> Orientation:
-        # TODO: interpolate the MPU-6050 quaternion history at this capture time.
+        # REAL DATA INPUT: interpolate the MPU-6050 quaternion history at this capture time.
         return Orientation()
 
     def reset(self) -> None:
-        # TODO: refuse calibration while moving, then average 600 gyro samples.
+        # REAL DATA INPUT: refuse calibration while moving, then average 600 gyro samples.
         pass

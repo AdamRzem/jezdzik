@@ -1,5 +1,6 @@
-# Hardware implementation is deliberately deferred. Only mode: stub is supported.
-mode: stub
+# mock: full synthetic pipeline; stub: legacy stationary poses only.
+# REAL DATA INPUT: hardware adapters must be implemented before adding a hardware mode.
+mode: mock
 server:
   host: 127.0.0.1
   port: 8765
@@ -12,6 +13,7 @@ camera:
   exposure_us: 4000
   gain: 1.0
   bitrate: 3000000
+  ffmpeg: ffmpeg # Executable path; mock frames use the normal H.264/RTSP path.
   rtsp_url: rtsp://127.0.0.1:8554/cam
   sensor_mode: null # Measure in Phase 0.
   readout_ns: null # Separate from exposure and IMU delay.
