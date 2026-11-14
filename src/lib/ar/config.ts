@@ -25,17 +25,22 @@ export const DEPTH = {
 	minInliers: 0.4,
 	tolerance: 0.05
 };
-// Pathfinder rocks stylised to hide a 10 cm cube (origin on the floor, centred).
+// Models stylised to hide a 10 cm cube (origin on the floor, centred).
+// The order is the item number and must match src/lib/story/world.ts:
+// 0-3 are story objects, 4-9 are waypoints A-F, 10-11 are spare rocks.
 const COVER_ROCKS = [
 	['barnacle-bill', 'Barnacle Bill'],
 	['yogi', 'Yogi'],
-	['scooby-doo', 'Scooby-Doo'],
-	['wedge', 'Wedge'],
+	['seis', 'Seismometer'],
+	['heat-probe', 'Heat probe'],
+	['beacon-a', 'Point A'],
+	['beacon-b', 'Point B'],
+	['beacon-c', 'Point C'],
+	['beacon-d', 'Spot D'],
+	['beacon-e', 'Spot E'],
+	['beacon-f', 'Point F'],
 	['shark', 'Shark'],
-	['half-dome', 'Half Dome'],
-	['moe', 'Moe'],
-	['stimpy', 'Stimpy'],
-	['chimp', 'Chimp']
+	['wedge', 'Wedge']
 ] as const;
 export const ITEM_TYPES = Array.from({ length: MARKER.count }, (_, id) => {
 	const [file, name] = COVER_ROCKS[id % COVER_ROCKS.length];

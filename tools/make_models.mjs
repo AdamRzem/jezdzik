@@ -1709,6 +1709,93 @@ for (const c of insightCovers()) {
 	if (!check.ok) process.exitCode = 1;
 }
 
+// Waypoint beacons A to F: a low four-sided pylon with the letter on every side.
+// Kept under 12 cm so the rover's low camera can read it from close up, and wide
+// enough (17 cm) to hide a cube if the point's marker is on one.
+{
+	const STROKES = {
+		a: [
+			[0, 0, 0.5, 1],
+			[0.5, 1, 1, 0],
+			[0.2, 0.4, 0.8, 0.4]
+		],
+		b: [
+			[0, 0, 0, 1],
+			[0, 1, 0.7, 1],
+			[0.7, 1, 0.9, 0.75],
+			[0.9, 0.75, 0.7, 0.5],
+			[0, 0.5, 0.7, 0.5],
+			[0.7, 0.5, 0.9, 0.25],
+			[0.9, 0.25, 0.7, 0],
+			[0.7, 0, 0, 0]
+		],
+		c: [
+			[1, 0.85, 0.75, 1],
+			[0.75, 1, 0.25, 1],
+			[0.25, 1, 0, 0.75],
+			[0, 0.75, 0, 0.25],
+			[0, 0.25, 0.25, 0],
+			[0.25, 0, 0.75, 0],
+			[0.75, 0, 1, 0.15]
+		],
+		d: [
+			[0, 0, 0, 1],
+			[0, 1, 0.6, 1],
+			[0.6, 1, 0.95, 0.7],
+			[0.95, 0.7, 0.95, 0.3],
+			[0.95, 0.3, 0.6, 0],
+			[0.6, 0, 0, 0]
+		],
+		e: [
+			[0, 0, 0, 1],
+			[0, 1, 0.9, 1],
+			[0, 0.5, 0.7, 0.5],
+			[0, 0, 0.9, 0]
+		],
+		f: [
+			[0, 0, 0, 1],
+			[0, 1, 0.9, 1],
+			[0, 0.5, 0.7, 0.5]
+		]
+	};
+	const body = hex('#0f7f8a');
+	const glow = hex('#5ff2ff');
+	const ink = hex('#f4fbff');
+	const half = 0.085;
+	for (const [letter, strokes] of Object.entries(STROKES)) {
+		const parts = [
+			prism(ring(0.23, 28), 0, 0.004, glow),
+			prism(ring(half * Math.SQRT2, 4, Math.PI / 4), 0, 0.118, body),
+			prism(ring(half * Math.SQRT2 + 0.006, 4, Math.PI / 4), 0.118, 0.12, glow)
+		];
+		for (let face = 0; face < 4; face++) {
+			const phi = (face * Math.PI) / 2;
+			const n = [Math.sin(phi), 0, Math.cos(phi)];
+			const r = [Math.cos(phi), 0, -Math.sin(phi)];
+			const at = (u, v) => [
+				n[0] * (half + 0.004) + r[0] * (u - 0.5) * 0.085,
+				0.018 + v * 0.085,
+				n[2] * (half + 0.004) + r[2] * (u - 0.5) * 0.085
+			];
+			for (const [u0, v0, u1, v1] of strokes)
+				parts.push(beam(at(u0, v0), at(u1, v1), 0.013, 0.013, ink));
+		}
+		const out = writeGLB(`cover/beacon-${letter}.glb`, [
+			node(`beacon-${letter}`, hard(`beacon-${letter}`, 'matte', parts))
+		]);
+		report.push({ model: out.file, tris: out.triangles, kB: +(out.bytes / 1024).toFixed(0) });
+		manifest.push({
+			id: `cover-beacon-${letter}`,
+			group: 'waypoints',
+			cover: true,
+			label: `Waypoint ${letter.toUpperCase()}`,
+			file: out.file,
+			triangles: out.triangles,
+			note: 'Waypoint beacon with its letter on all four sides. Low enough to read from the rover’s camera; wide enough to hide a 10 cm cube.'
+		});
+	}
+}
+
 // InSight: true-scale site
 {
 	const insight = makeInsight();
@@ -1799,6 +1886,7 @@ const layout = {
 	groups: [
 		{ id: 'cover', title: 'Cube covers: Sojourner rocks' },
 		{ id: 'cover-insight', title: 'Cube covers: InSight instruments' },
+		{ id: 'waypoints', title: 'Waypoint beacons' },
 		{ id: 'site', title: 'Pathfinder site (true scale)' },
 		{ id: 'insight', title: 'InSight site (true scale)' }
 	],
