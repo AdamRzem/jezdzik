@@ -101,4 +101,28 @@ describe('shared camera convention', () => {
 		items.clear();
 		expect(items.values()).toEqual([]);
 	});
+	it('expires missing objects after a brief grace period while retaining recently detected objects', () => {
+		const items = new ItemStore();
+		const item = { id: 0, x: 0, z: -1, yaw: 0 };
+		items.update(item, 1, 0);
+		items.update({ ...item, id: 1 }, 1, 200);
+		expect(items.expire(499)).toEqual([]);
+		expect(items.expire(500)).toEqual([0]);
+		expect(items.values().map((entry) => entry.id)).toEqual([1]);
+		items.update({ ...item, id: 1 }, 1, 600);
+		expect(items.expire(700)).toEqual([]);
+		expect(items.expire(1100)).toEqual([1]);
+		expect(items.values()).toEqual([]);
+	});
+	it('clears stale jump confirmation and immediately places a reacquired object', () => {
+		const items = new ItemStore();
+		const item = { id: 0, x: 0, z: -1, yaw: 0 };
+		items.update(item, 1, 0);
+		for (let i = 1; i <= 4; i++) items.update({ ...item, x: 0.5 }, 1, i);
+		items.expire(500);
+		items.update({ ...item, x: 1 }, 1, 600);
+		expect(items.values()[0]).toMatchObject({ x: 1, detections: 1, lastSeen: 600 });
+		items.update({ ...item, x: 0.5 }, 1, 601);
+		expect(items.values()[0].x).toBe(1);
+	});
 });

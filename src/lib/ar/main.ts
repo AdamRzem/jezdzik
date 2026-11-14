@@ -77,6 +77,14 @@ export class Viewer {
 		this.readbackContext = this.readback.getContext('2d', { willReadFrequently: true })!;
 		this.timer = setInterval(() => {
 			const now = performance.now();
+			if (!this.demo) {
+				const expired = this.items.expire(now);
+				for (const id of expired) this.anchors.delete(id);
+				if (expired.length) {
+					this.state.items = this.items.values();
+					this.scene.setItems(this.state.items);
+				}
+			}
 			if (now - this.fpsStarted >= 1000) {
 				this.state.fps = (this.frames * 1000) / (now - this.fpsStarted);
 				this.frames = 0;

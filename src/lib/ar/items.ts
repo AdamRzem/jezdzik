@@ -99,6 +99,16 @@ export class ItemStore {
 	values() {
 		return [...this.items.values()].map((item) => ({ ...item }));
 	}
+	expire(now = performance.now(), maxAgeMs: number = MARKER.lostAfterMs) {
+		const expired: number[] = [];
+		for (const [id, item] of this.items) {
+			if (now - item.lastSeen < maxAgeMs) continue;
+			this.items.delete(id);
+			this.jumps.delete(id);
+			expired.push(id);
+		}
+		return expired;
+	}
 	update(
 		measured: Pick<TrackedItem, 'id' | 'x' | 'z' | 'yaw'>,
 		distance: number,

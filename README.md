@@ -101,6 +101,10 @@ Y-up world convention, face `side` has outward normal
 IDs outside 10–57 are ignored. Update physical markers to this allocation and
 dictionary; the former IDs starting at 0 are retired.
 
+Live objects disappear after 500 ms without an accepted marker detection, allowing
+brief detection gaps. Reacquiring a marker places its object afresh. The timeout
+is configured by `MARKER.lostAfterMs` in `src/lib/ar/config.ts`.
+
 To debug detected markers that fail a guard, open `/play?mode=live&debug=aruco`
 and the browser's developer console. Each rejection or deferred update logs
 `[ArUco guard]` with the marker ID, epoch, frame, reason, and relevant values.
