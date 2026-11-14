@@ -193,8 +193,8 @@
 							>{String(missions.findIndex((m) => m.id === selected.id) + 1).padStart(3, '0')} / 024</span
 						>
 					</div>
-					<span class="availability" class:playable={!!selected.play}
-						>{selected.play ? '● READY TO EXPLORE' : '◷ COMING SOON'}</span
+					<span class="availability" class:playable={!!(selected.play || selected.story)}
+						>{selected.play || selected.story ? '● READY TO EXPLORE' : '◷ COMING SOON'}</span
 					>
 					<h2>{selected.name}</h2>
 					<p class="mission-type">{selected.kind} <span> / </span> {selected.year}</p>
@@ -213,23 +213,22 @@
 						<span>STILL OUT THERE</span>
 						<p>{selected.remains}</p>
 					</div>
-					{#if selected.play}<a class="play-button" href={selected.play}>Play now <span>↗</span></a>
-						<p class="play-caption" class:tight={selected.story}>
-								Step into the rover experience
-							</p>
-							{#if selected.story}<a class="play-button story-button" href={selected.story}
-									>Play story <span>↗</span></a
-								>
-								<p class="play-caption">Follow the mission story</p>{/if}{:else}<div
-							class="coming-soon"
+					{#if selected.play}
+						<a class="play-button" href={selected.play}>Play now <span>↗</span></a>
+						<p class="play-caption" class:tight={selected.story}>Step into the rover experience</p>
+					{/if}
+					{#if selected.story}
+						<a class="play-button" class:story-button={!!selected.play} href={selected.story}
+							>Play story <span>↗</span></a
 						>
-							Coming soon <span>◷</span>
-						</div>
-						<p class="play-caption">This story is waiting to be explored</p>{/if}<a
-						class="source-link"
-						href={selected.source}
-						target="_blank"
-						rel="noreferrer">NASA mission record <span>↗</span></a
+						<p class="play-caption">Follow the mission story</p>
+					{/if}
+					{#if !selected.play && !selected.story}
+						<div class="coming-soon">Coming soon <span>◷</span></div>
+						<p class="play-caption">This story is waiting to be explored</p>
+					{/if}
+					<a class="source-link" href={selected.source} target="_blank" rel="noreferrer"
+						>NASA mission record <span>↗</span></a
 					>
 				</section>
 			</div>

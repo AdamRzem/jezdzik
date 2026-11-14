@@ -157,11 +157,18 @@ its separate test command is `npm run test:storybook`.
 
 ## Host on the Pi
 
-`npm run build` produces a client-only static site in `build/`. Copy it to
-`/home/pi/rover-ar/web/` and use the templates in `pi/` for Caddy, MediaMTX and
-systemd. Set the actual user, paths, hostname and IP first. Caddy's local CA must
-be trusted on viewer devices for a secure WebGPU context. No service installation
-or deployment is performed by this implementation.
+Deploy on a Linux/systemd target with Caddy installed:
+
+```sh
+python3 tools/deploy.py dev --address 192.168.1.50
+python3 tools/deploy.py prod --address 192.168.1.50 --assets
+```
+
+Replace the IP with the target's address. Development runs Vite with hot reload;
+production serves a static release. Both use Caddy HTTPS and the rover proxies.
+Trust Caddy's local CA on viewer devices. See [deployment instructions](deploy/README.md)
+for prerequisites, public domains, backend addresses, config previews and rollback.
+The templates in `pi/` remain available for manual service setup.
 
 Hardware camera capture/encoding, IMU fusion, floor visual odometry, immutable
 landmarks and drift correction remain deferred for real hardware. Sensor
