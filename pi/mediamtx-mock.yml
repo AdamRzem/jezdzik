@@ -1,0 +1,15 @@
+# Real mode: MediaMTX exclusively owns the camera.
+rtsp: true
+rtspAddress: 0.0.0.0:8554
+rtspTransports: [tcp]
+rtmp: false
+hls: false
+srt: false
+moq: false
+webrtc: true
+webrtcAddress: 0.0.0.0:8889
+webrtcLocalUDPAddress: :8189
+webrtcLocalTCPAddress: ''
+paths:
+  cam:
+    source: publisher

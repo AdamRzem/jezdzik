@@ -18,6 +18,7 @@ PI = Path(__file__).resolve().parents[1]
 class ConfigurationTests(unittest.TestCase):
     def setUp(self):
         self.config = yaml.safe_load((PI / 'config.yaml').read_text())
+        self.config['mode'] = 'mock'
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.path = Path(self.directory.name) / 'config.yaml'
@@ -32,6 +33,18 @@ class ConfigurationTests(unittest.TestCase):
         for key in ('fx', 'fy', 'cx', 'cy', 'tilt_deg', 'rtsp_url', 'ffmpeg', 'bitrate'):
             del self.config['camera'][key]
         self.assertEqual(self.load(self.config)['mode'], 'stub')
+
+    def test_real_configuration_and_axis_validation(self):
+        self.config['mode'] = 'real'
+        self.assertEqual(self.load(self.config)['mode'], 'real')
+        self.config['imu']['axis_mapping'] = [[1, 0, 0], [0, 1, 0], [0, 0, -1]]
+        with self.assertRaisesRegex(ValueError, 'handedness'):
+            self.load(self.config)
+        self.config['imu']['axis_mapping'] = [[1, 0, 0], [0, 0, 1], [0, -1, 0]]
+        self.load(self.config)
+        self.config['imu']['address'] = 0x70
+        with self.assertRaisesRegex(ValueError, 'imu.address'):
+            self.load(self.config)
 
     def test_bad_sensor_and_transport_settings_fail_before_startup(self):
         cases = [

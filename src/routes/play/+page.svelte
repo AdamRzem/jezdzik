@@ -268,6 +268,7 @@
 									: `Tier ${status.tier}`}</span
 						>
 					</div>
+					<div><span>Alignment</span><span>{status.alignment}</span></div>
 					<div><span>World frame</span><span class="mono">{status.pose?.e ?? '—'}</span></div>
 				</div>
 				<div class="section-divider"></div>

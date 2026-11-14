@@ -2,7 +2,7 @@ import { CAMERA, MARKER } from './config';
 import { DemoSource, DEMO_ITEMS } from './demo';
 import { DepthWorker } from './depth';
 import { decodeStamp } from './framestamp';
-import { ItemStore, itemObservation, markerToItem } from './items';
+import { ItemStore, markerToItem } from './items';
 import { OcclusionProcessor } from './occlusion';
 import { PoseBuffer, PoseClient } from './pose';
 import { QualityController } from './quality';
@@ -14,6 +14,7 @@ import type { MarkerResult, Pose, QualityOverride, ViewerStatus, ViewMode } from
 export function initialStatus(): ViewerStatus {
 	return {
 		mode: 'demo',
+		alignment: 'exact',
 		video: 'idle',
 		socket: 'idle',
 		pose: null,
@@ -36,6 +37,7 @@ export class Viewer {
 	private scene: ARScene;
 	private state = initialStatus();
 	private items = new ItemStore();
+	private anchors = new Map<number, { id: number; x: number; z: number; yaw: number }>();
 	private sync = new FrameSync();
 	private occlusion = new OcclusionProcessor();
 	private quality = new QualityController();
@@ -126,6 +128,10 @@ export class Viewer {
 				(pose) => this.poses.push(pose),
 				(state) => {
 					this.state.socket = state;
+				},
+				() => {
+					this.poses.clear();
+					this.resetWorld();
 				}
 			);
 			this.socket.start();
@@ -139,10 +145,11 @@ export class Viewer {
 			this.startMarkers();
 			this.startDepth();
 			if ('requestVideoFrameCallback' in this.video) {
-				const tick = () => {
+				const tick = (_now: number, metadata: VideoFrameCallbackMetadata) => {
 					if (this.stopped || generation !== this.generation) return;
 					this.callback = this.video.requestVideoFrameCallback(tick);
-					if (!this.capturing) void this.capture(this.video, generation);
+					if (!this.capturing)
+						void this.capture(this.video, generation, metadata.expectedDisplayTime);
 				};
 				this.callback = this.video.requestVideoFrameCallback(tick);
 			} else {
@@ -166,6 +173,7 @@ export class Viewer {
 	}
 	private resetWorld() {
 		this.items.clear();
+		this.anchors.clear();
 		this.sync.reset();
 		this.occlusion.clear();
 		this.scene.clear();
@@ -178,7 +186,11 @@ export class Viewer {
 		this.state.fit = 0;
 		this.scene.hideObjects();
 	}
-	private async capture(source: HTMLVideoElement | HTMLCanvasElement, generation: number) {
+	private async capture(
+		source: HTMLVideoElement | HTMLCanvasElement,
+		generation: number,
+		presentationTime = performance.now()
+	) {
 		this.capturing = true;
 		let bitmap: ImageBitmap | null = null;
 		const epoch = this.poses.epoch;
@@ -203,10 +215,20 @@ export class Viewer {
 				}
 			} else bitmap = await createImageBitmap(source);
 			if (this.stopped || generation !== this.generation || epoch !== this.poses.epoch) return;
-			this.readbackContext.drawImage(bitmap, 0, 0, 416, 16, 0, 0, 416, 16);
-			const frame = decodeStamp(this.readbackContext.getImageData(0, 0, 416, 16));
-			const pose = frame === null ? undefined : this.poses.get(frame, epoch);
-			const decision = this.sync.decide(frame, pose);
+			const real = this.socket?.mode === 'real';
+			this.state.alignment = real ? 'approximate' : 'exact';
+			let pose: Pose | undefined;
+			let frame: number | null;
+			if (real) {
+				pose = this.socket!.framePose(presentationTime);
+				frame = pose?.f ?? null;
+				if (pose) this.poses.push(pose);
+			} else {
+				this.readbackContext.drawImage(bitmap, 0, 0, 416, 16, 0, 0, 416, 16);
+				frame = decodeStamp(this.readbackContext.getImageData(0, 0, 416, 16));
+				pose = frame === null ? undefined : this.poses.get(frame, epoch);
+			}
+			const decision = real ? (pose ? 'matched' : 'video-only') : this.sync.decide(frame, pose);
 			this.state.unknown = this.sync.unknown;
 			if (decision === 'hold' || decision === 'repeat') return;
 			if (decision === 'video-only') {
@@ -286,8 +308,11 @@ export class Viewer {
 			if (!item || seen.has(item.id)) continue;
 			seen.add(item.id);
 			const distance = Math.hypot(item.x - pose.x, item.z - pose.z);
-			this.items.update(item, distance);
-			this.socket?.send(itemObservation(item, pose));
+			if (this.socket?.mode === 'mock') {
+				if (!this.anchors.has(item.id)) this.anchors.set(item.id, { ...item });
+			}
+			this.items.update(this.anchors.get(item.id) ?? item, distance);
+			// Observations remain browser-local.
 		}
 	}
 	private startDepth() {

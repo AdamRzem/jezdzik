@@ -50,6 +50,7 @@ export interface DepthResult {
 	ms: number;
 }
 export interface ViewerStatus {
+	alignment: 'exact' | 'approximate';
 	mode: 'demo' | 'live';
 	video: ConnectionState;
 	socket: ConnectionState;

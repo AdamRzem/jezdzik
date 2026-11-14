@@ -59,3 +59,52 @@ class StubCamera:
                 pass
             # Drop elapsed ticks after a stalled event loop instead of flooding clients.
             deadline = max(deadline, loop.time() - 1 / self.fps)
+
+
+class PiCamera:
+    """Copy pixels and metadata from one libcamera request; never mix captures."""
+
+    def __init__(self, settings):
+        self.settings = settings
+        self.camera = None
+        self.counter = 0
+
+    def __enter__(self):
+        from picamera2 import Picamera2
+
+        self.camera = Picamera2(self.settings.get("index", 0))
+        s = self.settings
+        try:
+            duration = round(1_000_000 / s["fps"])
+            # Picamera2 BGR888 is RGB byte order (libcamera format naming).
+            config = self.camera.create_video_configuration(
+                main={"size": (s["width"], s["height"]), "format": "BGR888"},
+                controls={"FrameDurationLimits": (duration, duration),
+                          "AeEnable": False, "ExposureTime": s["exposure_us"],
+                          "AnalogueGain": s["gain"]}, buffer_count=4, queue=False)
+            self.camera.configure(config)
+            self.camera.start()
+        except BaseException:
+            self.camera.close()
+            raise
+        return self
+
+    def capture(self):
+        request = self.camera.capture_request()
+        try:
+            metadata = request.get_metadata()
+            image = request.make_array("main").copy()
+            frame = Frame(self.counter, int(metadata["SensorTimestamp"]),
+                          int(metadata["ExposureTime"]), self.settings["readout_ns"] or 0)
+            self.counter = (self.counter + 1) & 0xFFFF
+            for block, level in enumerate(stamp_levels(frame.number)):
+                image[:16, block * 16:(block + 1) * 16] = level
+            return frame, image.tobytes()
+        finally:
+            request.release()
+
+    def __exit__(self, *exc):
+        try:
+            self.camera.stop()
+        finally:
+            self.camera.close()

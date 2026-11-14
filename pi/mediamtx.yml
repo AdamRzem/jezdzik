@@ -1,15 +1,19 @@
 # Both mock and real camera producers publish to the same cam path.
 rtsp: true
-rtspAddress: 127.0.0.1:8554
+rtspAddress: 0.0.0.0:8554
 rtspTransports: [tcp]
 rtmp: false
 hls: false
 srt: false
 moq: false
 webrtc: true
-webrtcAddress: 127.0.0.1:8889
+webrtcAddress: 0.0.0.0:8889
 webrtcLocalUDPAddress: :8189
 webrtcLocalTCPAddress: ''
 paths:
   cam:
-    source: publisher
+    source: rpiCamera
+    rpiCameraWidth: 1280
+    rpiCameraHeight: 720
+    rpiCameraFPS: 30
+    rpiCameraBitrate: 2000000

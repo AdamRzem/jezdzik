@@ -58,6 +58,8 @@ class WebSocketTests(unittest.IsolatedAsyncioTestCase):
         async with serve(poses.handle, "127.0.0.1", 0) as server:
             port = server.sockets[0].getsockname()[1]
             async with connect(f"ws://127.0.0.1:{port}/ws") as first, connect(f"ws://127.0.0.1:{port}/ws") as second:
+                await first.recv()
+                await second.recv()
                 poses.publish(vo.update(Frame(65535, 0, 0), Orientation()))
                 a, b = json.loads(await first.recv()), json.loads(await second.recv())
                 self.assertEqual(a, b)

@@ -31,9 +31,9 @@ class PoseServer:
             else:
                 self.vo.reset()
             self.latest = None
-            logging.info("World reset: epoch=%s (hardware calibration is not implemented)", self.vo.epoch)
+            logging.info("World reset: epoch=%s (hardware IMU recalibrates when enabled)", self.vo.epoch)
         elif command.get("cmd") == "obs":
-            self.vo.observe(command)
+            pass  # Observations are processed in the browser.
 
     async def handle(self, websocket) -> None:
         from websockets.exceptions import ConnectionClosed
@@ -41,6 +41,8 @@ class PoseServer:
         if websocket.request.path != "/ws":
             await websocket.close(1008, "Use /ws")
             return
+        await websocket.send(json.dumps({"type": "hello", "v": 2,
+            "mode": "mock" if self.pipeline else "stub", "e": self.vo.epoch}))
         self.clients.add(websocket)
         try:
             if self.latest is not None:

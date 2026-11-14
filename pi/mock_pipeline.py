@@ -21,38 +21,8 @@ ITEMS = (
 
 
 class MockTracking(StubVO):
-    """Exercise returned observations and immutable anchors, without sensor fusion."""
-
-    def __init__(self, history_frames):
-        super().__init__(history_frames)
-        self.anchors = {}
-        self.observations = OrderedDict()
-
-    def reset(self):
-        super().reset()
-        self.anchors.clear()
-        self.observations.clear()
-
-    def observe(self, command):
-        if not self.valid_observation(command):
-            return False
-        key = (command["e"], command["f"], command["item"])
-        if key in self.observations:
-            return False
-        pose = self.history[command["f"]]
-        c, s = math.cos(pose["yaw"]), math.sin(pose["yaw"])
-        anchor = {"x": pose["x"] + c * command["right"] - s * command["forward"],
-                  "z": pose["z"] - s * command["right"] - c * command["forward"],
-                  "yaw": pose["yaw"] + command["yaw"]}
-        if not all(math.isfinite(value) for value in anchor.values()):
-            return False
-        self.anchors.setdefault(command["item"], anchor)
-        self.observations[key] = anchor
-        while len(self.observations) > self.history_frames * 12:
-            self.observations.popitem(last=False)
-        # REAL DATA INPUT: use anchor residuals to correct measured VO drift.
-        # Synthetic ground truth has no drift, so it needs no correction.
-        return True
+    """Synthetic pose source; observations live in the browser."""
+    pass
 
 
 @dataclass(frozen=True)

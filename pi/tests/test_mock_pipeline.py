@@ -28,20 +28,11 @@ class TrackingTests(unittest.TestCase):
         c, s = math.cos(pose['yaw']), math.sin(pose['yaw'])
         obs = dict(cmd='obs', e=pose['e'], f=65535, item=1,
                    right=dx*c-dz*s, forward=-dx*s-dz*c, yaw=item['yaw']-pose['yaw'])
-        self.assertTrue(vo.observe(obs))
-        self.assertFalse(vo.observe(obs))
-        for key in item:
-            self.assertAlmostEqual(vo.anchors[1][key], item[key])
-        for invalid in ({'e': -1}, {'f': 123}, {'right': float('nan')}, {'right': 10**400}, {'item': True}):
-            self.assertFalse(vo.observe({**obs, **invalid}))
-        for number in (0, 1):
-            vo.update(Frame(number, 0, 0), Orientation())
         self.assertFalse(vo.observe(obs))
         old = vo.epoch
         vo.reset()
         self.assertNotEqual(vo.epoch, old)
-        self.assertFalse(vo.anchors)
-        self.assertFalse(vo.observations)
+        self.assertFalse(vo.history)
 
     def test_publisher_uses_existing_rtsp_path_and_browser_compatible_h264(self):
         command = VideoPublisher(SETTINGS).command()
@@ -117,16 +108,13 @@ class MockSocketTests(unittest.IsolatedAsyncioTestCase):
             url = f"ws://127.0.0.1:{server.sockets[0].getsockname()[1]}"
             poses.publish(vo.update(Frame(65535, 1_000_000_000, 0), Orientation()))
             async with connect(url + '/ws') as a, connect(url + '/ws') as b:
+                await a.recv()
+                await b.recv()
                 first, second = json.loads(await a.recv()), json.loads(await b.recv())
                 self.assertEqual(first, second)
                 self.assertEqual(set(first), {'e','f','x','z','yaw','pitch','roll','q'})
                 await a.send(json.dumps(dict(cmd='obs', e=first['e'], f=65535,
                                              item=0, right=0, forward=1, yaw=0)))
-                for _ in range(100):
-                    if vo.anchors:
-                        break
-                    await asyncio.sleep(.001)
-                self.assertIn(0, vo.anchors)
                 await a.send('{"cmd":"reset"}')
                 for _ in range(100):
                     if vo.epoch != first['e']:
@@ -137,7 +125,7 @@ class MockSocketTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(new_a, new_b)
                 self.assertNotEqual(new_a['e'], first['e'])
                 self.assertEqual(new_a['f'], 0)
-                self.assertFalse(vo.anchors)
+                self.assertFalse(hasattr(vo, "anchors"))
             async with connect(url + '/ws/mock') as removed:
                 with self.assertRaises(ConnectionClosedError):
                     await removed.recv()

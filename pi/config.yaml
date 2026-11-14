@@ -1,8 +1,7 @@
-# mock: full synthetic pipeline; stub: legacy stationary poses only.
-# REAL DATA INPUT: hardware adapters must be implemented before adding a hardware mode.
-mode: mock
+# real: Picamera2 + MPU-6050; mock: synthetic; stub: stationary poses only.
+mode: real
 server:
-  host: 127.0.0.1
+  host: 0.0.0.0
   port: 8765
 camera:
   width: 1280
@@ -13,9 +12,9 @@ camera:
   exposure_us: 4000
   gain: 1.0
   bitrate: 3000000
-  ffmpeg: ffmpeg # Executable path; mock frames use the normal H.264/RTSP path.
+  ffmpeg: ffmpeg # Real and mock RGB frames use the same H.264/RTSP path.
   rtsp_url: rtsp://127.0.0.1:8554/cam
-  sensor_mode: null # Measure in Phase 0.
+  sensor_mode: null # Camera driver selects a mode; record and calibrate that mode.
   readout_ns: null # Separate from exposure and IMU delay.
   fx: 1653.8
   fy: 1662.4
