@@ -15,13 +15,14 @@ export const DEMO_ITEMS = [
 // target is roughly ahead of the last. Items 0-2 keep their demo positions.
 export const COURSE_ITEMS = [
 	...DEMO_ITEMS,
-	{ id: 3, x: 0.9, z: -2.7, yaw: 0.1 }, // heat probe
-	{ id: 4, x: 0.5, z: -0.7, yaw: 0 }, // point A
-	{ id: 5, x: -0.7, z: -1.7, yaw: 0 }, // point B
-	{ id: 6, x: 0.75, z: -2.1, yaw: 0 }, // point C
-	{ id: 7, x: 0.3, z: -3.0, yaw: 0 }, // spot D
-	{ id: 8, x: -0.8, z: -2.9, yaw: 0 }, // spot E
-	{ id: 9, x: -0.2, z: -3.8, yaw: 0 } // point F
+	{ id: 9, x: 0.95, z: -3.4, yaw: 0.2 }, // seismometer
+	{ id: 11, x: 0.9, z: -2.7, yaw: 0.1 }, // heat probe
+	{ id: 12, x: 0.5, z: -0.7, yaw: 0 }, // point A
+	{ id: 13, x: -0.7, z: -1.7, yaw: 0 }, // point B
+	{ id: 14, x: 0.75, z: -2.1, yaw: 0 }, // point C
+	{ id: 15, x: 0.3, z: -3.0, yaw: 0 }, // spot D
+	{ id: 16, x: -0.8, z: -2.9, yaw: 0 }, // spot E
+	{ id: 17, x: -0.2, z: -3.8, yaw: 0 } // point F
 ];
 const DRIVE_SPEED = 0.45; // metres per second
 const TURN_SPEED = 1.1; // radians per second

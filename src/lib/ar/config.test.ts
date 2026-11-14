@@ -4,9 +4,9 @@ import { describe, expect, it } from 'vitest';
 import { ITEM_TYPES, MARKER } from './config';
 
 describe('cover catalog', () => {
-	it('assigns one existing GLB to each of twelve objects', () => {
+	it('assigns one existing GLB to each item', () => {
 		expect(ITEM_TYPES).toHaveLength(MARKER.count);
-		expect(new Set(ITEM_TYPES.map((item) => item.model)).size).toBe(12);
+		expect(new Set(ITEM_TYPES.map((item) => item.model)).size).toBe(MARKER.count);
 		for (const item of ITEM_TYPES) {
 			expect(item.model).toBeTruthy();
 			expect(existsSync(resolve('static', item.model!.slice(1)))).toBe(true);
@@ -23,7 +23,13 @@ describe('cover catalog', () => {
 			'Chimp',
 			'SEIS',
 			'SEIS shield',
-			'Heat probe'
+			'Heat probe',
+			'Point A',
+			'Point B',
+			'Point C',
+			'Spot D',
+			'Spot E',
+			'Point F'
 		]);
 	});
 });

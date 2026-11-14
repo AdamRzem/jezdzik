@@ -1,8 +1,10 @@
 // What each tracked item means in the story.
 //
-// The AR viewer numbers items 0 to 11. Item i carries ArUco markers 4i to 4i+3
-// (dictionary DICT_4X4_50), one per side face. The same numbering selects the model
-// in src/lib/ar/config.ts, so keep the two files in step.
+// Item numbers come from the model list in src/lib/ar/config.ts (COVER_MODELS).
+// Item i carries ArUco markers MARKER.startId + 4i to + 4i + 3, one per side face.
+// Keep the two files in step.
+
+import { MARKER } from '../ar/config';
 
 export type WorldEntry = {
 	id: string;
@@ -15,14 +17,14 @@ export type WorldEntry = {
 export const world: WorldEntry[] = [
 	{ id: 'barnacle-bill', label: 'Barnacle Bill', item: 0, kind: 'object' },
 	{ id: 'yogi', label: 'Yogi', item: 1, kind: 'object' },
-	{ id: 'seis', label: 'Seismometer', item: 2, kind: 'object', the: true },
-	{ id: 'heat-probe', label: 'Heat probe', item: 3, kind: 'object', the: true },
-	{ id: 'A', label: 'Point A', item: 4, kind: 'point' },
-	{ id: 'B', label: 'Point B', item: 5, kind: 'point' },
-	{ id: 'C', label: 'Point C', item: 6, kind: 'point' },
-	{ id: 'D', label: 'Spot D', item: 7, kind: 'point' },
-	{ id: 'E', label: 'Spot E', item: 8, kind: 'point' },
-	{ id: 'F', label: 'Point F', item: 9, kind: 'point' }
+	{ id: 'seis', label: 'Seismometer', item: 9, kind: 'object', the: true },
+	{ id: 'heat-probe', label: 'Heat probe', item: 11, kind: 'object', the: true },
+	{ id: 'A', label: 'Point A', item: 12, kind: 'point' },
+	{ id: 'B', label: 'Point B', item: 13, kind: 'point' },
+	{ id: 'C', label: 'Point C', item: 14, kind: 'point' },
+	{ id: 'D', label: 'Spot D', item: 15, kind: 'point' },
+	{ id: 'E', label: 'Spot E', item: 16, kind: 'point' },
+	{ id: 'F', label: 'Point F', item: 17, kind: 'point' }
 ];
 
 export const labelOf = (id: string) => world.find((w) => w.id === id)?.label ?? id;
@@ -36,5 +38,5 @@ export const idOfItem = (item: number) => world.find((w) => w.item === item)?.id
 export const itemOf = (id: string) => world.find((w) => w.id === id)?.item ?? null;
 export const markersOf = (id: string) => {
 	const entry = world.find((w) => w.id === id);
-	return entry ? [0, 1, 2, 3].map((face) => entry.item * 4 + face) : [];
+	return entry ? [0, 1, 2, 3].map((face) => MARKER.startId + entry.item * 4 + face) : [];
 };
