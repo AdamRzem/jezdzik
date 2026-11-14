@@ -98,7 +98,6 @@
 	></video>
 	<canvas
 		bind:this={canvas}
-		class:camera-flipped={live}
 		width="1280"
 		height="720"
 		class="absolute inset-0 h-full w-full bg-black object-contain"

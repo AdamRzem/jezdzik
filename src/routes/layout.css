@@ -256,7 +256,7 @@ main {
 	padding: 0 7px;
 	color: #4e5a42;
 }
-/* Flip the displayed frame and its AR overlay together, leaving the HUD upright. */
+/* Match the raw video fallback to the live camera background's orientation. */
 .camera-flipped {
 	transform: scale(-1, -1);
 	transform-origin: center;

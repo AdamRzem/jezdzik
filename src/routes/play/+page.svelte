@@ -145,7 +145,6 @@
 					></video>
 					<canvas
 						bind:this={canvas}
-						class:camera-flipped={status.mode === 'live'}
 						width="1280"
 						height="720"
 						aria-label="Rectified camera frame with augmented reality objects"

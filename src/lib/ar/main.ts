@@ -106,6 +106,7 @@ export class Viewer {
 		this.stopSources();
 		this.stopped = false;
 		this.state = { ...initialStatus(), mode };
+		this.scene.setVideoFlipped(mode === 'live');
 		this.resetWorld();
 		this.poses.clear();
 		this.sync.unknown = 0;

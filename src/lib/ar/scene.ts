@@ -134,6 +134,7 @@ export class ARScene {
 			uniforms: {
 				...lens,
 				video: { value: this.videoTexture },
+				flipVideo: { value: false },
 				depth: { value: this.depthTexture },
 				inliers: { value: this.inlierTexture },
 				debug: { value: false }
@@ -142,13 +143,14 @@ export class ARScene {
 			depthTest: false,
 			depthWrite: false,
 			fragmentShader: `varying vec2 vUv; uniform sampler2D video; uniform sampler2D depth;
-uniform sampler2D inliers; uniform bool debug;
+uniform sampler2D inliers; uniform bool debug; uniform bool flipVideo;
 ${DISTORT_GLSL}
 void main(){
  vec2 p=rawUV(vUv);
- if(any(lessThan(p,vec2(0.0)))||any(greaterThan(p,vec2(1.0)))){gl_FragColor=vec4(0,0,0,1);return;}
- vec4 color=texture2D(video,vec2(p.x,1.0-p.y));
- if(p.x<416.0/1280.0 && p.y<16.0/720.0) color=vec4(0.025,0.035,0.035,1.0);
+ vec2 videoP=flipVideo ? rawUV(vec2(1.0)-vUv) : p;
+ if(any(lessThan(videoP,vec2(0.0)))||any(greaterThan(videoP,vec2(1.0)))){gl_FragColor=vec4(0,0,0,1);return;}
+ vec4 color=texture2D(video,vec2(videoP.x,1.0-videoP.y));
+ if(videoP.x<416.0/1280.0 && videoP.y<16.0/720.0) color=vec4(0.025,0.035,0.035,1.0);
  if(debug){ float z=texture2D(depth,p).r;
   vec3 heat=mix(vec3(0.03,0.13,0.2),vec3(0.71,0.9,0.42),clamp(1.0-z/3.0,0.0,1.0));
   color.rgb=mix(color.rgb,heat,0.75);
@@ -269,6 +271,10 @@ gl_FragColor=vec4(0.0);}`
 			model.position.set(item.x, 0, item.z);
 			model.rotation.y = item.yaw;
 		}
+	}
+	/** Correct camera mounting orientation without rotating AR objects or the interface. */
+	setVideoFlipped(flipped: boolean) {
+		this.background.uniforms.flipVideo.value = flipped;
 	}
 	setPath(path: { x: number; z: number }[]) {
 		this.trail.geometry.dispose();
