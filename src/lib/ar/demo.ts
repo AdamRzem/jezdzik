@@ -11,7 +11,31 @@ export const DEMO_ITEMS = [
 	{ id: 2, x: -0.22, z: -2.12, yaw: 0.5 }
 ];
 
+// The story course: every item from src/lib/story/world.ts, laid out so each next
+// target is roughly ahead of the last. Items 0-2 keep their demo positions.
+export const COURSE_ITEMS = [
+	...DEMO_ITEMS,
+	{ id: 9, x: 0.95, z: -3.4, yaw: 0.2 }, // seismometer
+	{ id: 11, x: 0.9, z: -2.7, yaw: 0.1 }, // heat probe
+	{ id: 12, x: 0.5, z: -0.7, yaw: 0 }, // point A
+	{ id: 13, x: -0.7, z: -1.7, yaw: 0 }, // point B
+	{ id: 14, x: 0.75, z: -2.1, yaw: 0 }, // point C
+	{ id: 15, x: 0.3, z: -3.0, yaw: 0 }, // spot D
+	{ id: 16, x: -0.8, z: -2.9, yaw: 0 }, // spot E
+	{ id: 17, x: -0.2, z: -3.8, yaw: 0 } // point F
+];
+const DRIVE_SPEED = 0.45; // metres per second
+const TURN_SPEED = 1.1; // radians per second
+const CARRY_AHEAD = 0.45; // metres in front of the lens where a carried item is held
+
 export class DemoSource {
+	/** Items in this simulation. In course mode a carried item moves with the rover. */
+	readonly items: { id: number; x: number; z: number; yaw: number }[];
+	private cubes = new Map<number, THREE.Mesh>();
+	private control = { forward: 0, turn: 0 };
+	private driven = { x: 0, z: 0, yaw: 0 };
+	private carried: number | null = null;
+	private lastCapture = 0;
 	private renderer = new THREE.WebGLRenderer({ antialias: true });
 	private scene = new THREE.Scene();
 	private camera = calibratedCamera();
@@ -22,7 +46,9 @@ export class DemoSource {
 	private started = performance.now();
 	private epoch = Math.floor(Math.random() * (2 ** 31 - 1));
 	private frame = 0;
-	constructor() {
+	/** course: lay out the story course and steer with setDrive() instead of the idle sway. */
+	constructor(private course = false) {
+		this.items = (course ? COURSE_ITEMS : DEMO_ITEMS).map((item) => ({ ...item }));
 		this.renderer.setSize(CAMERA.width, CAMERA.height);
 		this.renderer.setPixelRatio(1);
 		this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -89,13 +115,14 @@ export class DemoSource {
 			line.position.set(x, 0.0008, -3);
 			this.scene.add(line);
 		}
-		for (const item of DEMO_ITEMS) {
+		for (const item of this.items) {
 			const cube = new THREE.Mesh(
 				new THREE.BoxGeometry(0.1, 0.1, 0.1),
 				new THREE.MeshStandardMaterial({ color: '#e5e4d8', roughness: 0.9 })
 			);
 			cube.position.set(item.x, 0.05, item.z);
 			this.scene.add(cube);
+			this.cubes.set(item.id, cube);
 		}
 		this.obstacle = new THREE.Mesh(
 			new THREE.BoxGeometry(0.07, 0.24, 0.07),
@@ -112,14 +139,40 @@ export class DemoSource {
 		this.epoch = (this.epoch + 1 + Math.floor(Math.random() * 2147483646)) % 2147483648;
 		this.started = performance.now();
 	}
+	/** Course mode: forward and turn are -1 to 1; positive turn is left. */
+	setDrive(forward: number, turn: number) {
+		this.control = { forward, turn };
+	}
+	/** Course mode: hold an item in front of the rover, or pass null to set it down. */
+	carry(id: number | null) {
+		this.carried = id;
+	}
 	capture(now: number) {
 		const t = (now - this.started) / 1000;
+		let x = 0.025 * Math.sin(t * 0.18),
+			z = -0.04 * (1 - Math.cos(t * 0.15)),
+			yaw = Math.sin(t * 0.12) * 0.035;
+		if (this.course) {
+			const dt = this.lastCapture ? Math.min(0.5, (now - this.lastCapture) / 1000) : 0;
+			this.lastCapture = now;
+			const d = this.driven;
+			d.yaw += this.control.turn * TURN_SPEED * dt;
+			d.x -= Math.sin(d.yaw) * this.control.forward * DRIVE_SPEED * dt;
+			d.z -= Math.cos(d.yaw) * this.control.forward * DRIVE_SPEED * dt;
+			({ x, z, yaw } = d);
+			const held = this.items.find((item) => item.id === this.carried);
+			if (held) {
+				held.x = x - Math.sin(yaw) * CARRY_AHEAD;
+				held.z = z - Math.cos(yaw) * CARRY_AHEAD;
+				this.cubes.get(held.id)?.position.set(held.x, 0.05, held.z);
+			}
+		}
 		const pose: Pose = {
 			e: this.epoch,
 			f: this.frame++ & 0xffff,
-			x: 0.025 * Math.sin(t * 0.18),
-			z: -0.04 * (1 - Math.cos(t * 0.15)),
-			yaw: Math.sin(t * 0.12) * 0.035,
+			x,
+			z,
+			yaw,
 			pitch: 0,
 			roll: 0,
 			q: 2
@@ -140,7 +193,7 @@ export class DemoSource {
 		const matrix = cameraWorld(pose),
 			origin = new THREE.Vector3(pose.x, CAMERA.heightM, pose.z);
 		const boxes = [
-			...DEMO_ITEMS.map(
+			...this.items.map(
 				(item) =>
 					new THREE.Box3(
 						new THREE.Vector3(item.x - 0.05, 0, item.z - 0.05),

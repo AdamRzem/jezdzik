@@ -1,5 +1,5 @@
 import { CAMERA, MARKER } from './config';
-import { DemoSource, DEMO_ITEMS } from './demo';
+import { DemoSource } from './demo';
 import { DepthWorker } from './depth';
 import { decodeStamp } from './framestamp';
 import { ItemStore, markerToItem } from './items';
@@ -101,7 +101,8 @@ export class Viewer {
 			this.publish();
 		}, 50);
 	}
-	start(mode: 'demo' | 'live') {
+	/** course: in demo mode, use the drivable story course (see drive() and carry()). */
+	start(mode: 'demo' | 'live', options: { course?: boolean } = {}) {
 		this.stopSources();
 		this.stopped = false;
 		this.state = { ...initialStatus(), mode };
@@ -114,7 +115,7 @@ export class Viewer {
 		this.nextDepth = 0;
 		const generation = this.generation;
 		if (mode === 'demo') {
-			this.demo = new DemoSource();
+			this.demo = new DemoSource(options.course);
 			this.state.video = this.state.socket = 'connected';
 			this.state.markers = 'Simulated';
 			this.state.depth = 'Simulated geometry';
@@ -127,7 +128,7 @@ export class Viewer {
 				last = now;
 				const capture = this.demo!.capture(now);
 				this.poses.push(capture.pose);
-				for (const item of DEMO_ITEMS)
+				for (const item of this.demo!.items)
 					this.items.update(item, Math.hypot(item.x - capture.pose.x, item.z - capture.pose.z));
 				void this.capture(capture.canvas, generation);
 			};
@@ -453,6 +454,14 @@ export class Viewer {
 					if (generation === this.generation) this.depthBusy = false;
 				});
 		}
+	}
+	/** Steer the simulated rover on the story course. No effect with the real rover. */
+	drive(forward: number, turn: number) {
+		this.demo?.setDrive(forward, turn);
+	}
+	/** Simulation only: hold an item in front of the rover, or null to set it down. */
+	carry(id: number | null) {
+		this.demo?.carry(id);
 	}
 	setView(view: ViewMode) {
 		this.scene.setView(view);

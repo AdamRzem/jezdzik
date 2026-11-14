@@ -9,6 +9,10 @@
 			"title": "Cube covers: InSight instruments"
 		},
 		{
+			"id": "waypoints",
+			"title": "Waypoint beacons"
+		},
+		{
 			"id": "site",
 			"title": "Pathfinder site (true scale)"
 		},
@@ -515,6 +519,60 @@
 			"file": "cover/heat-probe.glb",
 			"triangles": 216,
 			"note": "The heat flow probe and its support structure. Stylised to hide a 10 cm cube; not to scale."
+		},
+		{
+			"id": "cover-beacon-a",
+			"group": "waypoints",
+			"cover": true,
+			"label": "Waypoint A",
+			"file": "cover/beacon-a.glb",
+			"triangles": 276,
+			"note": "Waypoint beacon with its letter on all four sides. Low enough to read from the rover’s camera; wide enough to hide a 10 cm cube."
+		},
+		{
+			"id": "cover-beacon-b",
+			"group": "waypoints",
+			"cover": true,
+			"label": "Waypoint B",
+			"file": "cover/beacon-b.glb",
+			"triangles": 516,
+			"note": "Waypoint beacon with its letter on all four sides. Low enough to read from the rover’s camera; wide enough to hide a 10 cm cube."
+		},
+		{
+			"id": "cover-beacon-c",
+			"group": "waypoints",
+			"cover": true,
+			"label": "Waypoint C",
+			"file": "cover/beacon-c.glb",
+			"triangles": 468,
+			"note": "Waypoint beacon with its letter on all four sides. Low enough to read from the rover’s camera; wide enough to hide a 10 cm cube."
+		},
+		{
+			"id": "cover-beacon-d",
+			"group": "waypoints",
+			"cover": true,
+			"label": "Waypoint D",
+			"file": "cover/beacon-d.glb",
+			"triangles": 420,
+			"note": "Waypoint beacon with its letter on all four sides. Low enough to read from the rover’s camera; wide enough to hide a 10 cm cube."
+		},
+		{
+			"id": "cover-beacon-e",
+			"group": "waypoints",
+			"cover": true,
+			"label": "Waypoint E",
+			"file": "cover/beacon-e.glb",
+			"triangles": 324,
+			"note": "Waypoint beacon with its letter on all four sides. Low enough to read from the rover’s camera; wide enough to hide a 10 cm cube."
+		},
+		{
+			"id": "cover-beacon-f",
+			"group": "waypoints",
+			"cover": true,
+			"label": "Waypoint F",
+			"file": "cover/beacon-f.glb",
+			"triangles": 276,
+			"note": "Waypoint beacon with its letter on all four sides. Low enough to read from the rover’s camera; wide enough to hide a 10 cm cube."
 		},
 		{
 			"id": "insight-lander",

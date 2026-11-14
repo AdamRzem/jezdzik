@@ -214,7 +214,13 @@
 						<p>{selected.remains}</p>
 					</div>
 					{#if selected.play}<a class="play-button" href={selected.play}>Play now <span>↗</span></a>
-						<p class="play-caption">Step into the rover experience</p>{:else}<div
+						<p class="play-caption" class:tight={selected.story}>
+								Step into the rover experience
+							</p>
+							{#if selected.story}<a class="play-button story-button" href={selected.story}
+									>Play story <span>↗</span></a
+								>
+								<p class="play-caption">Follow the mission story</p>{/if}{:else}<div
 							class="coming-soon"
 						>
 							Coming soon <span>◷</span>
@@ -706,6 +712,12 @@
 	}
 	.play-button:hover {
 		background: #d3f0aa;
+	}
+	.play-caption.tight {
+		margin-bottom: 12px;
+	}
+	.play-button.story-button {
+		margin-top: 0;
 	}
 	.coming-soon {
 		background: #283022;

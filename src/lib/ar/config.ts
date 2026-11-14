@@ -21,7 +21,7 @@ export const MARKER = {
 	dictionary: 'DICT_4X4_100',
 	startId: 10,
 	lostAfterMs: 500,
-	count: 12
+	count: 18
 } as const;
 export const DEPTH = {
 	model: '/models/depth-anything-v2-small-fp16.onnx',
@@ -32,7 +32,10 @@ export const DEPTH = {
 	minInliers: 0.4,
 	tolerance: 0.05
 };
-// Rocks and instruments stylised to hide a 10 cm cube (origin on the floor, centred).
+// Models stylised to hide a 10 cm cube (origin on the floor, centred).
+// The order is the item number: item i carries markers startId + 4i to startId + 4i + 3.
+// Items 0-11 are rocks and instruments; 12-17 are the story's waypoints A-F.
+// src/lib/story/world.ts refers to these numbers, so keep the two files in step.
 const COVER_MODELS = [
 	['barnacle-bill', 'Barnacle Bill'],
 	['yogi', 'Yogi'],
@@ -45,7 +48,13 @@ const COVER_MODELS = [
 	['chimp', 'Chimp'],
 	['seis', 'SEIS'],
 	['seis-shield', 'SEIS shield'],
-	['heat-probe', 'Heat probe']
+	['heat-probe', 'Heat probe'],
+	['beacon-a', 'Point A'],
+	['beacon-b', 'Point B'],
+	['beacon-c', 'Point C'],
+	['beacon-d', 'Spot D'],
+	['beacon-e', 'Spot E'],
+	['beacon-f', 'Point F']
 ] as const;
 export const ITEM_TYPES = COVER_MODELS.map(([file, name], id) => {
 	return {

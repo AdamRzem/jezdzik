@@ -68,7 +68,7 @@ describe('ArUco guard debugging', () => {
 	it('reports unmapped IDs, malformed poses, and upright-angle failures', () => {
 		const report = vi.fn();
 		expect(markerToItem({ ...detection, id: 9 }, pose, report)).toBeNull();
-		expect(report).toHaveBeenLastCalledWith('unmapped-marker-id', { minId: 10, maxId: 57 });
+		expect(report).toHaveBeenLastCalledWith('unmapped-marker-id', { minId: 10, maxId: 81 });
 		expect(markerToItem({ ...detection, translation: [NaN, 0, 1] }, pose, report)).toBeNull();
 		expect(report).toHaveBeenLastCalledWith('invalid-marker-pose', expect.any(Object));
 		expect(
