@@ -3,10 +3,10 @@
 	// the current goal, the analyse timer, NASA media, result cards and the mission log.
 	//
 	// Keys: Space or Enter continues, R restarts, left and right arrows step through the story.
-	import { onMount } from 'svelte';
+	import { onMount, type Snippet } from 'svelte';
 	import type { StoryEngine } from './engine.svelte';
 
-	let { engine }: { engine: StoryEngine } = $props();
+	let { engine, controls }: { engine: StoryEngine; controls?: Snippet } = $props();
 
 	const step = $derived(engine.step);
 	const missions = $derived(
@@ -85,6 +85,7 @@
 		</div>
 		{@render tag(step.real)}
 	</header>
+	{@render controls?.()}
 
 	<div class="flex min-h-0 flex-1 items-start justify-end p-4">
 		<!-- Mission log -->

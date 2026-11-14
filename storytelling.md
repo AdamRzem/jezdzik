@@ -6,7 +6,7 @@ Deadline: Sunday 15 November, 11:00. Version 4, Saturday evening.
 
 - **You are Sojourner.** The viewer drives the real rover and sees what it sees, with the gym floor turned into Mars.
 - **Mission Control tells the story.** People at NASA brief you, tell you when and where you land, and send instructions one mission at a time.
-- **One story, one rover.** This plan covers Sojourner only. InSight gets its own separate story next; its draft steps are parked in `src/lib/story/insight/story.ts` and are not used here.
+- **One story, one mission.** The Sojourner plan below is implemented at `/story`. InSight has a separate playable story at `/story?mission=insight`, using the same engine and HUD; its steps live in `src/lib/story/insight/story.ts`.
 - **The rover has an arm**, and the story treats that as given. It is a demo, so the story does not comment on it.
 - **Audience:** ages 11 to 14.
 - **Ending:** the mystery first (contact is lost), then the legacy.
@@ -162,4 +162,29 @@ Sources for the facts above:
 - Nature, report on the first rock analyses: https://www.nature.com/articles/40712
 - Wikipedia, Sojourner (rover): https://en.wikipedia.org/wiki/Sojourner_(rover)
 
-Nothing in the Sojourner story is waiting on verification. The InSight facts still to check are listed at the top of `src/lib/story/insight/story.ts`.
+InSight dates, deployments, first likely marsquake, heat-probe outcome and retirement were checked against the NASA/JPL sources linked in its story. Mission Control dialogue is dramatized, not a historical transcript.
+
+
+## InSight story
+
+Open InSight in the mission explorer and choose **Play story**, or visit
+`/story?mission=insight`. Add `&mode=live` for the connected rover. The original
+`/story` address still opens Sojourner.
+
+The nine steps follow landing, SEIS placement at D, shield placement at D,
+heat-probe placement at E, listening at F, the unsuccessful mole experiment,
+loss of contact, scientific results and the equipment left behind. The game
+adapts a stationary lander's arm operations into driving and carrying objectives;
+those objectives are labelled IMAGINED. Result cards explain the real events.
+The first likely marsquake video is a sonification sped up 60 times, not a
+microphone recording. Archive video needs an internet connection; Continue
+remains available if it cannot load.
+
+InSight uses object IDs 9 (SEIS), 10 (shield) and 11 (heat probe), plus waypoints
+D, E and F. All are present in the simulated course and use the existing GLBs.
+Controls match Sojourner: WASD drive, G grip, Space/Enter continue, arrows rehearse
+steps, R restart. The loss-of-signal dialogue is intentionally interrupted.
+
+Last contact was 15 December 2022; NASA declared the mission over on 21 December.
+Sources: [retirement and 1,319 marsquakes](https://www.jpl.nasa.gov/news/nasa-retires-insight-mars-lander-mission-after-years-of-science/),
+[first likely marsquake and audio processing](https://www.jpl.nasa.gov/images/pia23176-insights-sol-128-seismic-event/).

@@ -29,7 +29,7 @@ try {
 	await waitForFocusedPin();
 	await page.screenshot({ path: '/tmp/explorer-desktop.png', fullPage: true });
 	assert.equal(await page.locator('.mission-button').count(), 8);
-	// Every catalog item is selectable, and only Sojourner offers a playable route.
+	// Every catalog item is selectable; Sojourner and InSight have stories.
 	const tabs = page.locator('.world-tabs button');
 	let total = 0;
 	for (let w = 0; w < (await tabs.count()); w++) {
@@ -39,8 +39,11 @@ try {
 			const name = (await buttons.nth(i).locator('.mission-name').innerText()).split('\n')[0];
 			await buttons.nth(i).click();
 			await page.getByRole('heading', { name, exact: true }).waitFor();
-			assert.equal(await page.locator('.play-button').count(), name === 'Sojourner' ? 1 : 0);
-			if (name !== 'Sojourner')
+			assert.equal(
+				await page.locator('.play-button').count(),
+				name === 'Sojourner' ? 2 : name === 'InSight' ? 1 : 0
+			);
+			if (name !== 'Sojourner' && name !== 'InSight')
 				assert.match(await page.locator('.coming-soon').innerText(), /Coming soon/);
 			total++;
 		}

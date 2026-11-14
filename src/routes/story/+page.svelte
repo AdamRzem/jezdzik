@@ -5,6 +5,7 @@
 	// The viewer reports tracked items; this page turns them into story events.
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { Viewer } from '#lib/ar/main.js';
 	import type { ViewerStatus } from '#lib/ar/types.js';
 	import { StoryEngine } from '../../lib/story/engine.svelte';
@@ -24,7 +25,7 @@
 	let waiting = $state(false);
 
 	function switchMode() {
-		const query = new URLSearchParams(location.search);
+		const query = new SvelteURLSearchParams(location.search);
 		if (live) query.delete('mode');
 		else query.set('mode', 'live');
 		location.search = query.toString();
@@ -109,19 +110,19 @@
 		</p>
 	{/if}
 
-	<Hud {engine} />
-
-	<button
-		class="absolute top-16 left-4 rounded bg-black/60 px-2 py-1 font-mono text-xs text-amber-100/70 hover:text-amber-100"
-		onclick={switchMode}
-	>
-		{live ? 'LIVE ROVER · switch to simulation' : 'SIMULATION · connect the rover'}
-	</button>
-	{#if !live}
-		<p
-			class="absolute top-24 left-4 rounded bg-black/60 px-2 py-1 font-mono text-xs text-amber-100/70"
-		>
-			W A S D: drive · G: grip
-		</p>
-	{/if}
+	<Hud {engine}>
+		{#snippet controls()}
+			<div
+				class="pointer-events-auto mx-4 flex shrink-0 flex-col items-start gap-2 font-mono text-xs text-amber-100/70"
+			>
+				<button
+					class="rounded bg-black/60 px-2 py-1 text-left hover:text-amber-100"
+					onclick={switchMode}
+				>
+					{live ? 'LIVE ROVER · switch to simulation' : 'SIMULATION · connect the rover'}
+				</button>
+				{#if !live}<p class="rounded bg-black/60 px-2 py-1">W A S D: drive · G: grip</p>{/if}
+			</div>
+		{/snippet}
+	</Hud>
 </div>

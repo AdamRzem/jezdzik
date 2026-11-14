@@ -141,6 +141,7 @@ Browser checks use the existing Playwright dependency and a local server:
 ```sh
 # Uses Playwright's installed Chromium; optionally set AR_BROWSER_PATH to a browser.
 node tools/check_explorer.mjs
+node tools/check_story.mjs
 node tools/smoke_browser.mjs
 # Vite development server required; checks real ArUco detection and depth inference.
 node tools/check_workers.mjs
@@ -184,8 +185,9 @@ Asset sources: [OpenCV.js build](https://github.com/TechStark/opencv-js/releases
 
 The landing page at `/` contains 24 mission entries across Mars, the Moon, Ceres,
 Eros and deep space. Globe markers show original landing sites; mission details
-describe final resting places separately. Sojourner opens the existing viewer at
-`/play`; other experiences are labelled Coming soon. Legacy `/?mode=live` links
+describe final resting places separately. Sojourner opens the viewer at `/play` and its story at `/story`. InSight offers
+its own story at `/story?mission=insight`, including instrument placement and
+a NASA marsquake recording. Other experiences are labelled Coming soon. Legacy `/?mode=live` links
 forward to `/play?mode=live`.
 
 Mission data and NASA source links live in `src/lib/explorer/missions.ts`. Surface
