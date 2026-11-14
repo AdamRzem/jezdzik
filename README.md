@@ -101,6 +101,14 @@ Y-up world convention, face `side` has outward normal
 IDs outside 10–57 are ignored. Update physical markers to this allocation and
 dictionary; the former IDs starting at 0 are retired.
 
+To debug detected markers that fail a guard, open `/play?mode=live&debug=aruco`
+and the browser's developer console. Each rejection or deferred update logs
+`[ArUco guard]` with the marker ID, epoch, frame, reason, and relevant values.
+Reasons cover pose-solving failures, unmapped IDs, malformed poses, the upright
+angle check, stale/unmatched worker results, duplicate cube faces, and position
+jumps waiting for confirmation. Logging is off without `debug=aruco`; markers
+that the detector does not recognize produce no guard log.
+
 If assets or WebGPU are unavailable, marker/depth status explains the unavailable
 feature. Video and matched overlays continue. Automatic depth quality measures ten
 **full cycles** (resize, inference, readback, floor fit): tier A at ≤100 ms, tier B

@@ -3,19 +3,34 @@ import { MARKER } from './config';
 import { cameraWorld } from './rectify';
 import type { MarkerDetection, Observation, Pose, TrackedItem } from './types';
 
+export type GuardReporter = (reason: string, details: Record<string, unknown>) => void;
+
 export function wrapAngle(angle: number) {
 	return Math.atan2(Math.sin(angle), Math.cos(angle));
 }
-export function markerToItem(detection: MarkerDetection, pose: Pose) {
+export function markerToItem(detection: MarkerDetection, pose: Pose, onGuard?: GuardReporter) {
 	if (
 		!Number.isInteger(detection.id) ||
 		detection.id < MARKER.startId ||
-		detection.id >= MARKER.startId + MARKER.count * 4 ||
+		detection.id >= MARKER.startId + MARKER.count * 4
+	) {
+		onGuard?.('unmapped-marker-id', {
+			minId: MARKER.startId,
+			maxId: MARKER.startId + MARKER.count * 4 - 1
+		});
+		return null;
+	}
+	if (
 		detection.rotation.length !== 9 ||
 		detection.translation.length !== 3 ||
 		![...detection.rotation, ...detection.translation].every(Number.isFinite)
-	)
+	) {
+		onGuard?.('invalid-marker-pose', {
+			rotation: detection.rotation,
+			translation: detection.translation
+		});
 		return null;
+	}
 	const offset = detection.id - MARKER.startId;
 	const r = detection.rotation,
 		t = detection.translation;
@@ -39,7 +54,14 @@ export function markerToItem(detection: MarkerDetection, pose: Pose) {
 	);
 	marker.premultiply(cameraWorld(pose));
 	const up = new Vector3(0, 1, 0).transformDirection(marker);
-	if (up.y < Math.cos(Math.PI / 12)) return null;
+	if (up.y < Math.cos(Math.PI / 12)) {
+		onGuard?.('marker-not-upright', {
+			upY: up.y,
+			tiltDegrees: (Math.acos(Math.max(-1, Math.min(1, up.y))) * 180) / Math.PI,
+			maxTiltDegrees: 15
+		});
+		return null;
+	}
 	const normal = new Vector3(0, 0, 1).transformDirection(marker);
 	const center = new Vector3()
 		.setFromMatrixPosition(marker)
@@ -80,7 +102,8 @@ export class ItemStore {
 	update(
 		measured: Pick<TrackedItem, 'id' | 'x' | 'z' | 'yaw'>,
 		distance: number,
-		now = performance.now()
+		now = performance.now(),
+		onGuard?: GuardReporter
 	) {
 		const previous = this.items.get(measured.id);
 		if (!previous) {
@@ -92,7 +115,16 @@ export class ItemStore {
 			const count =
 				jump && Math.hypot(measured.x - jump.x, measured.z - jump.z) < 0.05 ? jump.count + 1 : 1;
 			this.jumps.set(measured.id, { x: measured.x, z: measured.z, count });
-			if (count < 5) return;
+			if (count < 5) {
+				onGuard?.('position-jump-pending', {
+					itemId: measured.id,
+					count,
+					required: 5,
+					previous: { x: previous.x, z: previous.z },
+					measured: { x: measured.x, z: measured.z }
+				});
+				return;
+			}
 			Object.assign(previous, measured);
 		} else {
 			const blend = distance <= 2 ? 0.3 : 0.1;

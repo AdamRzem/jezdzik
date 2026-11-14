@@ -98,7 +98,24 @@ self.onmessage = async ({ data }) => {
 						rotation: Array.from(rotation.data64F),
 						translation: Array.from(tvec.data64F)
 					});
+				} else if (config.debug) {
+					console.info('[ArUco guard]', {
+						markerId: ids.data32S[index],
+						reason: 'pose-solve-failed',
+						epoch: data.e,
+						frame: data.f
+					});
 				}
+			} catch (error) {
+				if (config.debug)
+					console.info('[ArUco guard]', {
+						markerId: ids.data32S[index],
+						reason: 'pose-solve-error',
+						epoch: data.e,
+						frame: data.f,
+						error: String(error)
+					});
+				throw error;
 			} finally {
 				markerCorners.delete();
 				imagePoints.delete();
