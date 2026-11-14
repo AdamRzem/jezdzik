@@ -64,6 +64,8 @@ export interface ViewerStatus {
 	fit: number;
 	markers: string;
 	depth: string;
+	/** Floor tracking from the video (live rover only). */
+	motion: string;
 	items: TrackedItem[];
 	path: { x: number; z: number }[];
 	error: string | null;

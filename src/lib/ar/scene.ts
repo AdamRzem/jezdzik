@@ -106,7 +106,8 @@ export class ARScene {
 	private inlierTexture = new THREE.DataTexture(new Uint8Array([0]), 1, 1, THREE.RedFormat);
 	private background: THREE.ShaderMaterial;
 	private depthPass: THREE.Mesh;
-	private grid = new THREE.GridHelper(8, 32, '#b8dd79', '#71816c');
+	// 25 cm squares. One colour throughout: the grid is re-centred under the rover as it drives.
+	private grid = new THREE.GridHelper(8, 32, '#a6cc74', '#a6cc74');
 	private trail: THREE.Line;
 	private disposed = false;
 	private view: ViewMode = 'objects';
@@ -134,7 +135,7 @@ export class ARScene {
 			uniforms: {
 				...lens,
 				video: { value: this.videoTexture },
-				flipVideo: { value: false },
+				stamped: { value: true },
 				depth: { value: this.depthTexture },
 				inliers: { value: this.inlierTexture },
 				debug: { value: false }
@@ -143,14 +144,13 @@ export class ARScene {
 			depthTest: false,
 			depthWrite: false,
 			fragmentShader: `varying vec2 vUv; uniform sampler2D video; uniform sampler2D depth;
-uniform sampler2D inliers; uniform bool debug; uniform bool flipVideo;
+uniform sampler2D inliers; uniform bool debug; uniform bool stamped;
 ${DISTORT_GLSL}
 void main(){
  vec2 p=rawUV(vUv);
- vec2 videoP=flipVideo ? rawUV(vec2(1.0)-vUv) : p;
- if(any(lessThan(videoP,vec2(0.0)))||any(greaterThan(videoP,vec2(1.0)))){gl_FragColor=vec4(0,0,0,1);return;}
- vec4 color=texture2D(video,vec2(videoP.x,1.0-videoP.y));
- if(videoP.x<416.0/1280.0 && videoP.y<16.0/720.0) color=vec4(0.025,0.035,0.035,1.0);
+ if(any(lessThan(p,vec2(0.0)))||any(greaterThan(p,vec2(1.0)))){gl_FragColor=vec4(0,0,0,1);return;}
+ vec4 color=texture2D(video,vec2(p.x,1.0-p.y));
+ if(stamped && p.x<416.0/1280.0 && p.y<16.0/720.0) color=vec4(0.025,0.035,0.035,1.0);
  if(debug){ float z=texture2D(depth,p).r;
   vec3 heat=mix(vec3(0.03,0.13,0.2),vec3(0.71,0.9,0.42),clamp(1.0-z/3.0,0.0,1.0));
   color.rgb=mix(color.rgb,heat,0.75);
@@ -188,7 +188,7 @@ gl_FragColor=vec4(0.0);}`
 		const light = new THREE.DirectionalLight('#fff0d7', 2.2);
 		light.position.set(-2, 5, 1);
 		this.scene.add(light);
-		this.grid.position.set(0, 0.002, -2);
+		this.grid.position.set(0, 0.002, 0);
 		this.grid.visible = false;
 		this.scene.add(this.grid);
 		this.trail = new THREE.Line(
@@ -272,9 +272,9 @@ gl_FragColor=vec4(0.0);}`
 			model.rotation.y = item.yaw;
 		}
 	}
-	/** Correct camera mounting orientation without rotating AR objects or the interface. */
-	setVideoFlipped(flipped: boolean) {
-		this.background.uniforms.flipVideo.value = flipped;
+	/** Simulated and mock video carry a frame-number stamp in the corner; real video does not. */
+	setStamped(stamped: boolean) {
+		this.background.uniforms.stamped.value = stamped;
 	}
 	setPath(path: { x: number; z: number }[]) {
 		this.trail.geometry.dispose();
@@ -285,7 +285,12 @@ gl_FragColor=vec4(0.0);}`
 	draw(frame: CanvasImageSource, pose: Pose | undefined, visible: boolean) {
 		this.context.drawImage(frame, 0, 0, CAMERA.width, CAMERA.height);
 		this.videoTexture.needsUpdate = true;
-		if (pose) setCameraPose(this.camera, pose);
+		if (pose) {
+			setCameraPose(this.camera, pose);
+			// Keep the grid under the rover, moving it by whole squares so its lines stay put.
+			this.grid.position.x = Math.round(pose.x / 0.25) * 0.25;
+			this.grid.position.z = Math.round(pose.z / 0.25) * 0.25;
+		}
 		this.objects.visible = visible;
 		this.grid.visible = this.trail.visible = visible && this.view === 'grid';
 		for (const model of this.models.values())

@@ -4,6 +4,7 @@ import { DepthWorker } from './depth';
 import { decodeStamp } from './framestamp';
 import { ItemStore, markerToItem } from './items';
 import { OcclusionProcessor } from './occlusion';
+import { FloorOdometry, relative, type Planar } from './odometry';
 import { PoseBuffer, PoseClient } from './pose';
 import { QualityController } from './quality';
 import { ARScene } from './scene';
@@ -27,6 +28,7 @@ export function initialStatus(): ViewerStatus {
 		fit: 0,
 		markers: 'Off',
 		depth: 'Off',
+		motion: 'Off',
 		items: [],
 		path: [],
 		error: null
@@ -49,7 +51,15 @@ export class Viewer {
 	private markerReady = false;
 	private markerRequest: Pose | null = null;
 	private markerDebug = new URLSearchParams(location.search).get('debug') === 'aruco';
+	// ?debug=odometry: run floor tracking on the simulated video and report how far it
+	// is from the simulation's true position. A way to test tracking without the rover.
+	private odometryDebug = new URLSearchParams(location.search).get('debug') === 'odometry';
+	private checkOrigin: Planar | null = null;
+	private checkDistance = 0;
 	private markerLoadingTimer: ReturnType<typeof setTimeout> | undefined;
+	private odometry: FloorOdometry | null = null;
+	private upright = document.createElement('canvas');
+	private uprightContext: CanvasRenderingContext2D;
 	private depth: DepthWorker | null = null;
 	private depthReady = false;
 	private depthBusy = false;
@@ -75,6 +85,11 @@ export class Viewer {
 		this.readback.width = 416;
 		this.readback.height = 16;
 		this.readbackContext = this.readback.getContext('2d', { willReadFrequently: true })!;
+		this.upright.width = CAMERA.width;
+		this.upright.height = CAMERA.height;
+		this.uprightContext = this.upright.getContext('2d', { alpha: false })!;
+		// Half a turn about the image centre.
+		this.uprightContext.setTransform(-1, 0, 0, -1, CAMERA.width, CAMERA.height);
 		this.timer = setInterval(() => {
 			const now = performance.now();
 			if (!this.demo) {
@@ -90,9 +105,11 @@ export class Viewer {
 				this.frames = 0;
 				this.fpsStarted = now;
 			}
+			if (this.odometry && !this.demo) this.state.motion = this.odometry.status;
+			// Half a second without a frame, so a slow device does not blink the overlay.
 			if (
 				this.lastMatched &&
-				performance.now() - this.lastMatched >= 100 &&
+				performance.now() - this.lastMatched >= 500 &&
 				!this.state.trackingLost
 			) {
 				this.state.trackingLost = true;
@@ -106,7 +123,6 @@ export class Viewer {
 		this.stopSources();
 		this.stopped = false;
 		this.state = { ...initialStatus(), mode };
-		this.scene.setVideoFlipped(mode === 'live');
 		this.resetWorld();
 		this.poses.clear();
 		this.sync.unknown = 0;
@@ -120,6 +136,11 @@ export class Viewer {
 			this.state.video = this.state.socket = 'connected';
 			this.state.markers = 'Simulated';
 			this.state.depth = 'Simulated geometry';
+			this.state.motion = 'Simulated';
+			if (this.odometryDebug) {
+				this.odometry = new FloorOdometry();
+				this.checkOrigin = null;
+			}
 			this.state.tier = 'B';
 			let last = 0;
 			const tick = (now: number) => {
@@ -153,6 +174,7 @@ export class Viewer {
 				this.publish(true);
 			});
 			this.whep.start();
+			this.odometry = new FloorOdometry();
 			this.startMarkers();
 			this.startDepth();
 			if ('requestVideoFrameCallback' in this.video) {
@@ -187,6 +209,7 @@ export class Viewer {
 		this.anchors.clear();
 		this.sync.reset();
 		this.occlusion.clear();
+		this.odometry?.reset();
 		this.scene.clear();
 		this.markerRequest = null;
 		this.state.pose = null;
@@ -205,6 +228,12 @@ export class Viewer {
 		this.capturing = true;
 		let bitmap: ImageBitmap | null = null;
 		const epoch = this.poses.epoch;
+		// The real rover sends plain camera video. Only the Python mock stamps frames
+		// with poses; with no pose channel at all, treat the video as the real camera.
+		const real =
+			!this.demo &&
+			(this.socket?.mode === 'real' ||
+				(this.socket?.mode === '' && this.state.socket !== 'connected'));
 		try {
 			if (
 				source instanceof HTMLVideoElement &&
@@ -225,13 +254,26 @@ export class Viewer {
 					frame?.close();
 				}
 			} else bitmap = await createImageBitmap(source);
+			if (real && CAMERA.upsideDown) {
+				// Everything downstream (floor tracking, markers, depth, display) gets upright frames.
+				this.uprightContext.drawImage(bitmap, 0, 0, CAMERA.width, CAMERA.height);
+				bitmap.close();
+				bitmap = await createImageBitmap(this.upright);
+			}
 			if (this.stopped || generation !== this.generation || epoch !== this.poses.epoch) return;
-			const real = this.socket?.mode === 'real';
-			this.state.alignment = real ? 'approximate' : 'exact';
+			const tracked = real && Boolean(this.odometry?.available);
+			this.state.alignment = real && !tracked ? 'approximate' : 'exact';
+			this.scene.setStamped(!real);
 			let pose: Pose | undefined;
 			let frame: number | null;
 			if (real) {
 				pose = this.socket!.framePose(presentationTime);
+				if (tracked) {
+					// Position and heading measured from this very frame, so the overlay cannot lag.
+					const fix = await this.odometry!.track(bitmap, presentationTime);
+					if (this.stopped || generation !== this.generation) return;
+					pose = { ...pose, x: fix.x, z: fix.z, yaw: fix.yaw, pitch: 0, roll: 0, q: fix.q };
+				}
 				frame = pose.f;
 				this.poses.push(pose);
 			} else {
@@ -249,6 +291,8 @@ export class Viewer {
 				return;
 			}
 			if (!pose) return;
+			if (this.demo && this.odometry) await this.checkOdometry(bitmap, pose);
+			if (this.stopped || generation !== this.generation) return;
 			this.lastMatched = performance.now();
 			this.state.trackingLost = false;
 			this.state.pose = pose;
@@ -279,6 +323,22 @@ export class Viewer {
 			bitmap?.close();
 			if (generation === this.generation) this.capturing = false;
 		}
+	}
+	/** Simulation only: compare floor tracking with the simulated rover's true position. */
+	private async checkOdometry(bitmap: ImageBitmap, truth: Pose) {
+		const previous = this.state.pose;
+		const fix = await this.odometry!.track(bitmap);
+		if (!this.checkOrigin) {
+			if (fix.q !== 2) return;
+			this.checkOrigin = { x: truth.x, z: truth.z, yaw: truth.yaw };
+			this.checkDistance = 0;
+		}
+		if (previous) this.checkDistance += Math.hypot(truth.x - previous.x, truth.z - previous.z);
+		const expected = relative(this.checkOrigin, truth);
+		const off = Math.hypot(fix.x - expected.x, fix.z - expected.z) * 1000,
+			turned = ((fix.yaw - expected.yaw) * 180) / Math.PI;
+		this.state.motion = `Check · ${off.toFixed(0)} mm and ${turned.toFixed(1)}° off after ${this.checkDistance.toFixed(2)} m · ${this.odometry!.status}`;
+		if (truth.f % 30 === 0) console.info('[odometry check]', this.state.motion);
 	}
 	private startMarkers() {
 		const worker = (this.marker = new Worker('/workers/markers.worker.js'));
@@ -487,7 +547,11 @@ export class Viewer {
 	reset() {
 		if (this.demo) this.demo.reset();
 		else if (!this.socket?.send({ cmd: 'reset' })) {
-			this.state.error = 'Connect the pose channel before resetting.';
+			if (this.odometry?.available) {
+				// No pose channel: floor tracking can still start a new world on its own.
+				this.poses.clear();
+				this.resetWorld();
+			} else this.state.error = 'Connect the pose channel before resetting.';
 			this.publish(true);
 		}
 	}
@@ -508,8 +572,9 @@ export class Viewer {
 		this.demo?.dispose();
 		this.marker?.terminate();
 		this.depth?.dispose();
+		this.odometry?.dispose();
 		clearTimeout(this.markerLoadingTimer);
-		this.socket = this.whep = this.demo = this.marker = this.depth = null;
+		this.socket = this.whep = this.demo = this.marker = this.depth = this.odometry = null;
 		this.markerReady = this.depthReady = this.depthBusy = false;
 		this.markerRequest = null;
 	}

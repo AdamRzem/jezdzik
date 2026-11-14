@@ -6,8 +6,12 @@ export const CAMERA = {
 	fy: 1662.4,
 	cx: 640,
 	cy: 360,
-	heightM: 0.127,
+	heightM: 0.137,
 	tilt: (10 * Math.PI) / 180,
+	// The rover's camera is mounted upside down. Live frames are turned upright once,
+	// at capture, so markers, depth and floor tracking all see the same upright image.
+	// Set to false if the flip is ever done on the Pi (rpiCameraHFlip + rpiCameraVFlip).
+	upsideDown: true,
 	near: 0.05,
 	far: 50,
 	// cx/cy and distortion still require calibration on the final sensor mode.
@@ -22,6 +26,14 @@ export const MARKER = {
 	startId: 10,
 	lostAfterMs: 500,
 	count: 18
+} as const;
+// Floor tracking (src/lib/ar/odometry.ts): the rover's motion is measured from the
+// floor texture in the video, on a half-size copy of the floor part of each frame.
+export const FLOW = {
+	scale: 0.5,
+	maxRangeM: 1.5, // floor farther away than this is too flat in the image to measure
+	tolerancePx: 3,
+	minInliers: 12
 } as const;
 export const DEPTH = {
 	model: '/models/depth-anything-v2-small-fp16.onnx',

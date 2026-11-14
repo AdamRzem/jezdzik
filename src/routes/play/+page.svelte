@@ -429,6 +429,7 @@
 	</p>
 	<div class="diagnostics">
 		<div><span>Marker detector</span><strong>{status.markers}</strong></div>
+		<div><span>Floor tracking</span><strong>{status.motion}</strong></div>
 		<div><span>Depth pipeline</span><strong>{status.depth}</strong></div>
 		<div>
 			<span>Full depth cycle</span><strong
@@ -436,7 +437,7 @@
 			>
 		</div>
 		<div><span>Floor-fit inliers</span><strong>{(status.fit * 100).toFixed(0)}%</strong></div>
-		<div><span>Camera geometry</span><strong>{CAMERA.heightM} m / 10°</strong></div>
+		<div><span>Camera geometry</span><strong>{CAMERA.heightM} m / {degrees(CAMERA.tilt)}°</strong></div>
 	</div>
 	<a class="benchmark-button" href="/bench">Run depth benchmark <Icon name="arrow" size={16} /></a>
 	<p class="calibration-note">
