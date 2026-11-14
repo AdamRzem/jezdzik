@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { CAMERA, ITEM_TYPES } from './config';
+import { makeGround } from './ground';
 import { cameraWorld, DISTORT_GLSL, projectionMatrix, rectifiedToRaw } from './rectify';
 import type { OcclusionFrame } from './occlusion';
 import type { Pose, TrackedItem, ViewMode } from './types';
@@ -109,6 +110,8 @@ export class ARScene {
 	// 25 cm squares. One colour throughout: the grid is re-centred under the rover as it drives.
 	private grid = new THREE.GridHelper(8, 32, '#a6cc74', '#a6cc74');
 	private trail: THREE.Line;
+	// Mars under the rover's wheels: shown in the Objects view, hidden behind real obstacles.
+	private ground = makeGround();
 	private disposed = false;
 	private view: ViewMode = 'objects';
 	constructor(canvas: HTMLCanvasElement) {
@@ -190,7 +193,7 @@ gl_FragColor=vec4(0.0);}`
 		this.scene.add(light);
 		this.grid.position.set(0, 0.002, 0);
 		this.grid.visible = false;
-		this.scene.add(this.grid);
+		this.scene.add(this.grid, this.ground);
 		this.trail = new THREE.Line(
 			new THREE.BufferGeometry(),
 			new THREE.LineBasicMaterial({ color: '#b9df78' })
@@ -290,9 +293,17 @@ gl_FragColor=vec4(0.0);}`
 			// Keep the grid under the rover, moving it by whole squares so its lines stay put.
 			this.grid.position.x = Math.round(pose.x / 0.25) * 0.25;
 			this.grid.position.z = Math.round(pose.z / 0.25) * 0.25;
+			// The ground's pattern is fixed to the world; only the sheet follows the rover.
+			this.ground.position.set(pose.x, 0, pose.z);
+			(this.ground.material as THREE.ShaderMaterial).uniforms.eye.value.set(
+				pose.x,
+				CAMERA.heightM,
+				pose.z
+			);
 		}
 		this.objects.visible = visible;
 		this.grid.visible = this.trail.visible = visible && this.view === 'grid';
+		this.ground.visible = visible && this.view === 'objects';
 		for (const model of this.models.values())
 			model.traverse((child) => {
 				if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
@@ -308,7 +319,7 @@ gl_FragColor=vec4(0.0);}`
 		(model.userData.shadowTexture as THREE.Texture)?.dispose();
 	}
 	hideObjects() {
-		this.objects.visible = this.grid.visible = this.trail.visible = false;
+		this.objects.visible = this.grid.visible = this.trail.visible = this.ground.visible = false;
 		this.renderer.render(this.scene, this.camera);
 	}
 	clear() {
