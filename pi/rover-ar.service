@@ -1,0 +1,21 @@
+[Unit]
+Description=Rover AR pose service (hardware stub)
+After=network-online.target mediamtx.service
+Wants=network-online.target
+Before=caddy.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/rover-ar/pi
+ExecStart=/home/pi/rover-ar/pi/.venv/bin/python rover_ar.py --config config.yaml
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

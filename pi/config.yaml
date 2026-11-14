@@ -1,0 +1,43 @@
+# Hardware implementation is deliberately deferred. Only mode: stub is supported.
+mode: stub
+server:
+  host: 127.0.0.1
+  port: 8765
+camera:
+  width: 1280
+  height: 720
+  lores_width: 640
+  lores_height: 360
+  fps: 30
+  exposure_us: 4000
+  gain: 1.0
+  bitrate: 3000000
+  rtsp_url: rtsp://127.0.0.1:8554/cam
+  sensor_mode: null # Measure in Phase 0.
+  readout_ns: null # Separate from exposure and IMU delay.
+  fx: 1653.8
+  fy: 1662.4
+  cx: 640 # Placeholder.
+  cy: 360 # Placeholder.
+  distortion: null # Must be calibrated; zero is not a measurement.
+  height_m: 0.127
+  tilt_deg: 10
+imu:
+  bus: 1
+  address: 0x68
+  sample_hz: 200
+  delay_ns: 5500000
+  axis_mapping: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # Verify after mounting.
+  bias_seconds: 3
+  moving_attitude_time_constant_s: 4
+tracking:
+  history_seconds: 3
+  prediction_seconds: 0.3
+  minimum_tracks: 15
+  max_speed_m_s: 0.3
+  max_turn_deg_s: 60
+markers:
+  dictionary: DICT_4X4_50
+  side_m: 0.08
+  cube_m: 0.10
+  item_count: 12

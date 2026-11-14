@@ -24,3 +24,11 @@ vite.config.ts.timestamp-*
 
 *storybook.log
 storybook-static
+
+# Downloaded AR assets and Python environments
+/static/vendor/
+/static/ort/
+/static/models/
+__pycache__/
+.venv/
+*.pyc

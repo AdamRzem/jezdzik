@@ -1,0 +1,16 @@
+# Set ROVER_ADDRESS to the Pi hostname/IP before deployment.
+{$ROVER_ADDRESS:rover.local} {
+    tls internal
+    encode zstd gzip
+    handle /cam/* {
+        reverse_proxy 127.0.0.1:8889
+    }
+    handle /ws {
+        reverse_proxy 127.0.0.1:8765
+    }
+    handle {
+        root * /home/pi/rover-ar/web
+        try_files {path} {path}/index.html /index.html
+        file_server
+    }
+}
