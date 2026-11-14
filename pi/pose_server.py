@@ -1,4 +1,4 @@
-"""The real WebSocket wire protocol around synthetic, lost-quality poses."""
+"""The real WebSocket wire protocol around synthetic or measured poses."""
 
 import json
 import logging
@@ -8,7 +8,8 @@ from vo import StubVO
 
 
 class PoseServer:
-    def __init__(self, imu: StubIMU, vo: StubVO):
+    def __init__(self, imu: StubIMU, vo: StubVO, pipeline=None):
+        self.pipeline = pipeline
         self.imu = imu
         self.vo = vo
         self.clients = set()
@@ -25,15 +26,21 @@ class PoseServer:
             return
         if command.get("cmd") == "reset":
             self.imu.reset()
-            self.vo.reset()
+            if self.pipeline:
+                self.pipeline.reset()
+            else:
+                self.vo.reset()
             self.latest = None
-            logging.info("Stub reset: epoch=%s (hardware calibration is not implemented)", self.vo.epoch)
+            logging.info("World reset: epoch=%s (hardware calibration is not implemented)", self.vo.epoch)
         elif command.get("cmd") == "obs":
             self.vo.observe(command)
 
     async def handle(self, websocket) -> None:
         from websockets.exceptions import ConnectionClosed
 
+        if websocket.request.path != "/ws":
+            await websocket.close(1008, "Use /ws")
+            return
         self.clients.add(websocket)
         try:
             if self.latest is not None:

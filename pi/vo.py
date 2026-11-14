@@ -21,6 +21,7 @@ class StubVO:
         # TODO: clear immutable landmark anchors and observation deduplication.
 
     def update(self, frame: Frame, orientation: Orientation) -> dict:
+        # REAL DATA INPUT: replace stationary values with measured floor odometry.
         pose = {"e": self.epoch, "f": frame.number, "x": 0.0, "z": 0.0,
                 "yaw": orientation.yaw, "pitch": orientation.pitch,
                 "roll": orientation.roll, "q": 0}
@@ -29,9 +30,9 @@ class StubVO:
             self.history.popitem(last=False)
         return pose
 
-    def observe(self, command: dict) -> bool:
-        """Validate the envelope; no anchor or correction is applied by this stub."""
-        if command.get("e") != self.epoch or type(command.get("f")) is not int:
+    def valid_observation(self, command: dict) -> bool:
+        """Only accept finite observations for a retained capture in this epoch."""
+        if type(command.get("e")) is not int or command.get("e") != self.epoch or type(command.get("f")) is not int:
             return False
         if command["f"] not in self.history:
             return False
@@ -39,7 +40,13 @@ class StubVO:
             return False
         for key in ("right", "forward", "yaw"):
             value = command.get(key)
-            if type(value) not in (int, float) or not math.isfinite(value):
+            try:
+                if type(value) not in (int, float) or not math.isfinite(value):
+                    return False
+            except OverflowError:
                 return False
-        # TODO Phase 7: deduplicate (e, f, item), establish anchors, correct drift.
+        return True
+
+    def observe(self, command: dict) -> bool:
+        """REAL DATA INPUT: implement landmark correction using capture history."""
         return False
