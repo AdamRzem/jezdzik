@@ -437,7 +437,8 @@ export class Viewer {
 			.then(() => {
 				if (depth === this.depth) {
 					this.depthReady = true;
-					this.state.depth = 'Ready';
+					this.state.depth = `Ready · ${depth.loaded}`;
+					console.info('[depth]', depth.loaded);
 					this.state.tier = this.quality.tier;
 				}
 			})

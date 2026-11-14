@@ -1,4 +1,5 @@
 import * as ort from 'onnxruntime-web/webgpu';
+import { cachedBytes } from '../assetCache';
 import { DEPTH } from '../config';
 
 let session: ort.InferenceSession | null = null;
@@ -30,11 +31,26 @@ self.onmessage = async ({ data: message }) => {
 			if (!adapter.features.has('shader-f16'))
 				throw new Error('This GPU lacks shader-f16 for the fp16 depth model.');
 			ort.env.webgpu.adapter = adapter;
-			session = await ort.InferenceSession.create(DEPTH.model, {
+			// The model (50 MB) and the runtime (29 MB) are kept in this browser after the
+			// first visit, so a reload does not download them again.
+			const started = performance.now();
+			const [model, runtime] = await Promise.all([
+				cachedBytes(DEPTH.model),
+				cachedBytes(ort.env.wasm.wasmPaths + DEPTH.runtime).catch(() => null)
+			]);
+			// Without a stored runtime, ONNX Runtime downloads its own copy from wasmPaths.
+			if (runtime) ort.env.wasm.wasmBinary = runtime.bytes;
+			const fetched = performance.now();
+			session = await ort.InferenceSession.create(new Uint8Array(model.bytes), {
 				executionProviders: ['webgpu'],
 				graphOptimizationLevel: 'all'
 			});
-			self.postMessage({ type: 'ready' });
+			self.postMessage({
+				type: 'ready',
+				source: model.source,
+				fetchMs: fetched - started,
+				startMs: performance.now() - fetched
+			});
 		} catch (error) {
 			self.postMessage({
 				type: 'error',

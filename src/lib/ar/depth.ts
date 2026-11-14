@@ -14,6 +14,8 @@ export class DepthWorker {
 	private inferenceTimer: ReturnType<typeof setTimeout> | undefined;
 	private failed: Error | null = null;
 	readonly ready: Promise<void>;
+	/** How the model was loaded, for the viewer's diagnostics. */
+	loaded = '';
 	constructor() {
 		this.ready = new Promise((resolve, reject) => {
 			this.readyResolve = resolve;
@@ -29,6 +31,8 @@ export class DepthWorker {
 		this.worker.onmessage = ({ data }) => {
 			if (data.type === 'ready') {
 				clearTimeout(this.timer);
+				const seconds = (ms: number) => `${(ms / 1000).toFixed(1)} s`;
+				this.loaded = `${data.source === 'stored' ? 'model kept in this browser' : 'model downloaded'} in ${seconds(data.fetchMs)}, started in ${seconds(data.startMs)}`;
 				this.readyResolve();
 			}
 			if (data.type === 'depth') {

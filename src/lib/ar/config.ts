@@ -37,6 +37,7 @@ export const FLOW = {
 } as const;
 export const DEPTH = {
 	model: '/models/depth-anything-v2-small-fp16.onnx',
+	runtime: 'ort-wasm-simd-threaded.asyncify.wasm', // the file ONNX Runtime's WebGPU build loads from /ort/
 	A: { width: 518, height: 294, maxMs: 100 },
 	B: { width: 322, height: 182, maxMs: 330 },
 	samples: 600,
