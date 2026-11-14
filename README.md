@@ -11,11 +11,11 @@ npm install
 npm run dev
 ```
 
-Open the printed local URL. **Demo** starts automatically and needs no camera,
+Open the printed local URL for the mission explorer. Select Sojourner and **Play now** to enter `/play`. **Demo** starts automatically and needs no camera,
 Pi service, downloaded model, internet connection or WebGPU. Its synthetic room,
 moving foreground box, stamped video frames and poses run through the same
 frame matcher, renderer and occlusion processor used by live mode. The demo is
-always labelled as simulated. `/?mode=live` opens the hardware connection instead.
+always labelled as simulated. `/play?mode=live` opens the hardware connection instead.
 
 The **Objects**, **Floor grid** and **Depth** views, object list, local map, pose
 reset, fullscreen control and quality settings work on phones and laptops.
@@ -97,6 +97,7 @@ Browser checks use the existing Playwright dependency and a local server:
 
 ```sh
 # Uses Playwright's installed Chromium; optionally set AR_BROWSER_PATH to a browser.
+node tools/check_explorer.mjs
 node tools/smoke_browser.mjs
 # Vite development server required; checks real ArUco detection and depth inference.
 node tools/check_workers.mjs
@@ -128,3 +129,17 @@ demo do not mark those hardware acceptance criteria as passed.
 Asset sources: [OpenCV.js build](https://github.com/TechStark/opencv-js/releases/tag/v4.12.0-release.1),
 [pinned ONNX model](https://huggingface.co/onnx-community/depth-anything-v2-small/blob/709283e53fbd1183571e606f5cb37beae681336d/onnx/model_fp16.onnx),
 [ONNX Runtime Web](https://onnxruntime.ai/docs/tutorials/web/).
+
+## Mission explorer
+
+The landing page at `/` contains 24 mission entries across Mars, the Moon, Ceres,
+Eros and deep space. Globe markers show original landing sites; mission details
+describe final resting places separately. Sojourner opens the existing viewer at
+`/play`; other experiences are labelled Coming soon. Legacy `/?mode=live` links
+forward to `/play?mode=live`.
+
+Mission data and NASA source links live in `src/lib/explorer/missions.ts`. Surface
+coordinates use north-positive latitude and east-positive longitude. Ceres, Eros
+and deep-space diagrams are illustrative, not live ephemerides or surveyed shape
+models. Mars and Moon maps are bundled locally from Solar System Scope under
+CC BY 4.0; attribution is available in the page footer.

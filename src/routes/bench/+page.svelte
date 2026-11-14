@@ -116,7 +116,7 @@
 >
 <div class="bench-shell">
 	<header>
-		<a class="back-link" href="/"><Icon name="arrow" size={16} /> Back to viewer</a><span
+		<a class="back-link" href="/play"><Icon name="arrow" size={16} /> Back to viewer</a><span
 			class="eyebrow">DEVICE BENCHMARK</span
 		>
 	</header>

@@ -1,439 +1,1066 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import Icon from '#lib/components/Icon.svelte';
-	import { CAMERA, ITEM_TYPES } from '#lib/ar/config.js';
-	import { Viewer, initialStatus } from '#lib/ar/main.js';
-	import type { QualityOverride, ViewMode } from '#lib/ar/types.js';
-
-	let status = $state(initialStatus());
-	let view = $state<ViewMode>('objects');
-	let quality = $state<QualityOverride>('auto');
-	let canvas: HTMLCanvasElement;
-	let video: HTMLVideoElement;
-	let stage: HTMLDivElement;
-	let resetDialog: HTMLDialogElement;
-	let settingsDialog: HTMLDialogElement;
-	let viewer: Viewer | undefined;
-	let ready = $state(false);
-	let fatal = $state('');
-	let controlError = $state('');
-	const degrees = (radians: number) => ((radians * 180) / Math.PI).toFixed(1);
-	const formatFrame = (frame: number | null) =>
-		frame === null ? '—' : String(frame).padStart(5, '0');
-	const distance = (x: number, z: number) =>
-		status.pose ? Math.hypot(x - status.pose.x, z - status.pose.z).toFixed(2) : '—';
-	let tracking = $derived(
-		status.trackingLost
-			? 'Waiting for frames'
-			: status.pose?.q === 0
-				? 'Position lost'
-				: status.pose?.q === 1
-					? 'Predicting position'
-					: 'Tracking'
-	);
-	let mapPath = $derived(
-		status.path.map((p, i) => `${i ? 'L' : 'M'}${120 + p.x * 80},${132 + p.z * 80}`).join(' ')
-	);
-
+	import { goto } from '$app/navigation';
+	import Globe from '#lib/explorer/Globe.svelte';
+	import {
+		missions,
+		worlds,
+		coordinates,
+		type World,
+		type Mission
+	} from '#lib/explorer/missions.js';
+	let world = $state<World>('Mars');
+	let selected = $state<Mission>(missions[0]);
+	let entries = $derived(missions.filter((m) => m.world === world));
+	function chooseWorld(next: World) {
+		world = next;
+		selected = missions.find((m) => m.world === next)!;
+	}
+	function select(m: Mission) {
+		selected = m;
+	}
 	onMount(() => {
-		try {
-			viewer = new Viewer(canvas, video, (next) => {
-				status = next;
-			});
-			viewer.start(new URLSearchParams(location.search).get('mode') === 'live' ? 'live' : 'demo');
-			ready = true;
-		} catch (error) {
-			fatal = error instanceof Error ? error.message : 'WebGL is unavailable in this browser.';
-		}
-		return () => viewer?.dispose();
+		if (new URLSearchParams(location.search).get('mode') === 'live')
+			void goto('/play?mode=live', { replaceState: true });
 	});
-	function setView(next: ViewMode) {
-		view = next;
-		viewer?.setView(next);
-	}
-	function setMode(mode: 'demo' | 'live') {
-		controlError = '';
-		viewer?.start(mode);
-		viewer?.setQuality(quality);
-	}
-	function setQuality(event: Event) {
-		quality = (event.target as HTMLSelectElement).value as QualityOverride;
-		viewer?.setQuality(quality);
-	}
-	async function fullscreen() {
-		try {
-			if (document.fullscreenElement) await document.exitFullscreen();
-			else await stage.requestFullscreen();
-		} catch {
-			controlError = 'Fullscreen is unavailable in this browser.';
-		}
-	}
 </script>
 
-<svelte:head>
-	<title>Rover — Spatial viewer</title>
-	<meta
+<svelte:head
+	><title>Rover — Stories left among the stars</title><meta
 		name="description"
-		content="A local AR view from your rover. Frame-matched video, floor-anchored objects and real-world occlusion."
-	/>
-</svelte:head>
-
-<div class="app-shell">
-	<header class="app-header">
-		<a class="brand" href="/" aria-label="Rover home">
-			<span class="brand-mark"><Icon name="cube" size={24} /></span>
-			<strong>rover<span class="brand-period">.</span></strong>
-			<span class="brand-divider"></span><span class="brand-caption">SPATIAL VIEWER</span>
-		</a>
-		<div class="header-actions">
-			<span class="local-label"><span class="tiny-dot"></span> Local workspace</span>
-			<a
-				class="icon-button bench-link"
-				href="/bench"
-				aria-label="Open depth benchmark"
-				title="Depth benchmark"><Icon name="bolt" /></a
-			>
-			<button
-				class="icon-button"
-				onclick={() => settingsDialog.showModal()}
-				aria-label="Viewer settings"><Icon name="settings" /></button
-			>
-		</div>
+		content="Explore the landing sites and stories of NASA’s retired spacecraft. Discover 24 missions across the Moon, Mars, and beyond. Play the Sojourner experience."
+	/></svelte:head
+>
+<div class="explorer-page">
+	<header class="explorer-header">
+		<a href="/" class="wordmark" aria-label="Rover home"
+			><span class="logo-orbit">✳</span> rover<span class="period">.</span><span class="brand-tag"
+				>THE MISSION ARCHIVE</span
+			></a
+		><a class="header-link" href="#missions">Explore missions <span>↗</span></a>
 	</header>
-
-	<main>
-		<div class="page-heading">
+	<main class="explorer-main">
+		<section class="intro">
+			<div class="intro-copy">
+				<p class="eyeline"><span></span> LEFT BEHIND. NOT FORGOTTEN.</p>
+				<h1>Their missions ended.<br />Their stories <em>remain.</em></h1>
+				<p class="intro-description">
+					Across distant worlds, our explorers are still out there.<br class="desktop-break" /> Find where
+					they landed. Discover what they left behind.
+				</p>
+			</div>
+			<div class="intro-aside">
+				<span class="orbit-symbol" aria-hidden="true">◎</span>
+				<p>A new perspective on<br />the things we leave behind.</p>
+				<span class="archive-index">EST. 1966 — STILL OUT THERE</span>
+			</div>
+		</section>
+		<section id="missions" class="mission-explorer" aria-label="Mission explorer">
+			<div class="explorer-top">
+				<div class="world-tabs" aria-label="Choose a destination">
+					{#each worlds as destination}<button
+							class:active={world === destination}
+							aria-pressed={world === destination}
+							onclick={() => chooseWorld(destination)}
+							><span class="world-dot" class:mars={destination === 'Mars'}
+							></span>{destination}<small
+								>{missions
+									.filter((m) => m.world === destination)
+									.length.toString()
+									.padStart(2, '0')}</small
+							></button
+						>{/each}
+				</div>
+				<span class="live-key"><i></i> 1 EXPERIENCE AVAILABLE</span>
+			</div>
+			<div class="explorer-body">
+				<aside class="mission-list">
+					<div class="list-heading">
+						<span>SELECT A MISSION</span><span>{entries.length.toString().padStart(2, '0')}</span>
+					</div>
+					<div class="mission-buttons">
+						{#each entries as m}<button
+								class="mission-button"
+								class:active={selected.id === m.id}
+								aria-pressed={selected.id === m.id}
+								onclick={() => select(m)}
+								><span class="mission-icon" aria-hidden="true"
+									>{m.kind === 'Rover'
+										? '⊞'
+										: m.kind === 'Helicopter'
+											? '✣'
+											: m.location.type === 'surface'
+												? '⌁'
+												: '↗'}</span
+								><span class="mission-name">{m.name}<small>{m.kind} <b>·</b> {m.year}</small></span
+								><span class="mission-status" class:available={!!m.play}>{m.play ? '●' : '↗'}</span
+								></button
+							>{/each}
+					</div>
+					<p class="list-foot">Different journeys.<br />A shared place in our story.</p>
+				</aside>
+				<div class="world-stage">
+					<div class="world-caption">
+						<span>DESTINATION / {String(worlds.indexOf(world) + 1).padStart(2, '0')}</span>
+						<h2>{world === 'Moon' ? 'The Moon' : world}</h2>
+						<p>
+							{world === 'Mars'
+								? 'THE RED PLANET'
+								: world === 'Moon'
+									? 'OUR NEAREST NEIGHBOR'
+									: world === 'Ceres'
+										? 'THE DWARF PLANET'
+										: world === 'Eros'
+											? 'ASTEROID 433'
+											: 'BEYOND THE HORIZON'}
+						</p>
+					</div>
+					{#if world === 'Deep space'}<div class="space-diagram">
+							<svg
+								viewBox="0 0 500 400"
+								role="img"
+								aria-label="Schematic of Kepler’s solar orbit and Pioneer outbound trajectories, not to scale"
+								><defs
+									><radialGradient id="sun-glow"
+										><stop stop-color="#e5c88a" stop-opacity=".25" /><stop
+											offset="1"
+											stop-color="#e5c88a"
+											stop-opacity="0"
+										/></radialGradient
+									></defs
+								><circle cx="230" cy="225" r="115" fill="url(#sun-glow)" /><g
+									fill="none"
+									stroke="#78816e"
+									stroke-width=".7"
+									><ellipse cx="230" cy="225" rx="90" ry="57" /><ellipse
+										cx="230"
+										cy="225"
+										rx="150"
+										ry="97"
+									/><ellipse cx="230" cy="225" rx="205" ry="135" stroke-dasharray="3 7" /><path
+										d="M230 225 Q320 170 422 62"
+									/><path d="M230 225 Q115 250 60 90" /></g
+								><circle cx="230" cy="225" r="12" fill="#d8bd82" /><text
+									x="230"
+									y="257"
+									fill="#9f9f8b"
+									text-anchor="middle"
+									font-size="10">SUN</text
+								><circle cx="310" cy="199" r="4" fill="#92a5ae" /><text
+									x="320"
+									y="195"
+									fill="#9fa9aa"
+									font-size="9">EARTH</text
+								></svg
+							><button
+								class="space-pin pioneer10"
+								class:chosen={selected.id === 'pioneer-10'}
+								onclick={() => select(entries[0])}>↗ Pioneer 10</button
+							><button
+								class="space-pin pioneer11"
+								class:chosen={selected.id === 'pioneer-11'}
+								onclick={() => select(entries[1])}>↖ Pioneer 11</button
+							><button
+								class="space-pin kepler"
+								class:chosen={selected.id === 'kepler'}
+								onclick={() => select(entries[2])}>◇ Kepler</button
+							>
+						</div>{:else}{#key world}<Globe
+								{world}
+								missions={entries}
+								{selected}
+								onselect={select}
+							/>{/key}{/if}
+					<div class="world-bottom">
+						<span
+							>{world === 'Deep space'
+								? 'SCHEMATIC · NOT TO SCALE'
+								: world === 'Ceres'
+									? 'ILLUSTRATIVE GLOBE · SCHEMATIC ORBIT'
+									: world === 'Eros'
+										? 'ILLUSTRATIVE SHAPE · APPROXIMATE SITE'
+										: 'ORIGINAL LANDING SITES'}</span
+						><small
+							>{world === 'Deep space'
+								? 'Illustrated trajectories, not current positions'
+								: '↔ Drag to rotate · + / − to zoom'}</small
+						>
+					</div>
+				</div>
+				<section class="mission-detail" aria-label="Selected mission" aria-live="polite">
+					<div class="detail-top">
+						<span class="detail-label">MISSION FILE</span><span class="file-number"
+							>{String(missions.findIndex((m) => m.id === selected.id) + 1).padStart(3, '0')} / 024</span
+						>
+					</div>
+					<span class="availability" class:playable={!!selected.play}
+						>{selected.play ? '● READY TO EXPLORE' : '◷ COMING SOON'}</span
+					>
+					<h2>{selected.name}</h2>
+					<p class="mission-type">{selected.kind} <span> / </span> {selected.year}</p>
+					<p class="mission-description">{selected.description}</p>
+					<dl>
+						<div>
+							<dt>{selected.location.type === 'surface' ? 'LANDING SITE' : 'LOCATION'}</dt>
+							<dd>{selected.site}</dd>
+						</div>
+						<div>
+							<dt>{selected.location.type === 'surface' ? 'COORDINATES' : 'ENVIRONMENT'}</dt>
+							<dd class="coordinate-value">{coordinates(selected)}</dd>
+						</div>
+					</dl>
+					<div class="remains">
+						<span>STILL OUT THERE</span>
+						<p>{selected.remains}</p>
+					</div>
+					{#if selected.play}<a class="play-button" href={selected.play}>Play now <span>↗</span></a>
+						<p class="play-caption">Step into the rover experience</p>{:else}<div
+							class="coming-soon"
+						>
+							Coming soon <span>◷</span>
+						</div>
+						<p class="play-caption">This story is waiting to be explored</p>{/if}<a
+						class="source-link"
+						href={selected.source}
+						target="_blank"
+						rel="noreferrer">NASA mission record <span>↗</span></a
+					>
+				</section>
+			</div>
+		</section>
+		<section class="closing">
+			<span class="closing-icon" aria-hidden="true">✧</span>
 			<div>
-				<div class="eyebrow">ROVER / CAMERA 01</div>
-				<h1>A different view of the floor<span>.</span></h1>
-				<p>Real surroundings. A little more possibility.</p>
+				<h2>Exploration leaves a trace.</h2>
+				<p>A wheel track. A silent instrument. A story worth telling.</p>
 			</div>
-			<div class="source-switch" aria-label="Video source">
-				<button
-					class:active={status.mode === 'demo'}
-					onclick={() => setMode('demo')}
-					disabled={!ready}><Icon name="play" size={14} /> Demo</button
-				>
-				<button
-					class:active={status.mode === 'live'}
-					onclick={() => setMode('live')}
-					disabled={!ready}><Icon name="link" size={15} /> Connect rover</button
-				>
-			</div>
-		</div>
-
-		<div class="workspace">
-			<section class="viewer-panel" aria-label="Camera viewer">
-				<div class="viewer-toolbar">
-					<div class="camera-title">
-						<Icon name="camera" size={16} /><span>Floor view</span><span
-							class="source-badge"
-							class:live={status.mode === 'live'}
-							>{status.mode === 'demo' ? 'SIMULATED' : 'LIVE'}</span
-						>
-					</div>
-					<div class="viewer-specs">1280 × 720 <span>·</span> 30 FPS</div>
-				</div>
-				<div class="video-stage" bind:this={stage}>
-					<video bind:this={video} muted autoplay playsinline aria-label="Raw rover camera stream"
-					></video>
-					<canvas
-						bind:this={canvas}
-						width="1280"
-						height="720"
-						aria-label="Rectified camera frame with augmented reality objects"
-					></canvas>
-					<div class="stage-top">
-						<span class="tracking-badge" class:warning={status.trackingLost || status.pose?.q === 0}
-							><span class="tiny-dot"></span>{tracking}</span
-						><span class="frame-badge">F {formatFrame(status.frame)}</span>
-					</div>
-					<div class="reticle" aria-hidden="true"><span></span><span></span></div>
-					{#if fatal}<div class="stage-message">
-							<Icon name="info" size={24} />
-							<h2>Viewer unavailable</h2>
-							<p>{fatal}</p>
-						</div>
-					{:else if status.mode === 'live' && status.frame === null}
-						<div class="stage-message">
-							<span class="connection-ring"></span>
-							<h2>Waiting for the rover</h2>
-							<p>
-								{status.socket === 'connected'
-									? 'Pose channel connected. Waiting for stamped video.'
-									: 'Connecting to the camera and pose channel…'}
-							</p>
-							<button class="text-button" onclick={() => setMode('demo')}
-								>Explore the demo <Icon name="arrow" size={16} /></button
-							>
-						</div>
-					{/if}
-					<div class="stage-bottom">
-						<span class="orientation-label">Y ↑ <span>−Z FORWARD</span></span><button
-							class="stage-expand"
-							onclick={fullscreen}
-							aria-label="Toggle fullscreen"><Icon name="expand" size={17} /></button
-						>
-					</div>
-				</div>
-				<div class="view-controls">
-					<div class="layer-tabs" aria-label="Overlay view">
-						{#each [{ id: 'objects', name: 'Objects', icon: 'cube' }, { id: 'grid', name: 'Floor grid', icon: 'grid' }, { id: 'depth', name: 'Depth', icon: 'depth' }] as tab}
-							<button
-								class:selected={view === tab.id}
-								aria-pressed={view === tab.id}
-								onclick={() => setView(tab.id as ViewMode)}
-								><Icon name={tab.icon} size={16} />{tab.name}</button
-							>
-						{/each}
-					</div>
-					<span class="view-hint"
-						><span class="tiny-dot"></span>
-						{status.mode === 'demo' ? 'Local simulation' : 'Frame-matched overlay'}</span
-					>
-				</div>
-				<div class="telemetry" aria-label="Frame telemetry">
-					<div>
-						<span class="metric-label">FRAME RATE</span><strong
-							>{status.fps ? status.fps.toFixed(0) : '—'}<small>fps</small></strong
-						><span class="metric-note">Rendered frames</span>
-					</div>
-					<div>
-						<span class="metric-label">POSITION</span><strong
-							>{status.pose ? status.pose.x.toFixed(2) : '—'}<small>/</small>{status.pose
-								? status.pose.z.toFixed(2)
-								: '—'}<small>m</small></strong
-						><span class="metric-note">X / Z on the floor</span>
-					</div>
-					<div>
-						<span class="metric-label">HEADING</span><strong
-							>{status.pose ? degrees(status.pose.yaw) : '—'}<small>°</small></strong
-						><span class="metric-note">Relative to reset</span>
-					</div>
-					<div>
-						<span class="metric-label">UNKNOWN FRAMES</span><strong
-							class:metric-warning={status.unknown > 0}
-							>{status.unknown}<small>frames</small></strong
-						><span class="metric-note">Never estimated</span>
-					</div>
-				</div>
-				{#if status.error || controlError}<div class="notice error-notice" role="status">
-						<Icon name="info" size={16} /><span>{status.error || controlError}</span>
-						{#if status.error}<button onclick={() => setMode('live')} class="text-button"
-								>Retry</button
-							>
-						{:else}<button
-								onclick={() => {
-									controlError = '';
-								}}
-								class="text-button">Dismiss</button
-							>{/if}
-					</div>{/if}
-			</section>
-
-			<aside class="session-panel" aria-label="Session information">
-				<div class="panel-heading">
-					<span class="eyebrow">SESSION</span><span class="session-number">01</span>
-				</div>
-				<div class="session-status">
-					<span class="status-orbit" class:waiting={status.trackingLost}
-						><Icon name="crosshair" size={21} /></span
-					>
-					<div>
-						<strong>{status.mode === 'demo' ? 'Demo environment' : 'Rover connection'}</strong><span
-							>{status.mode === 'demo'
-								? 'Explore without hardware'
-								: status.socket === 'connected'
-									? 'Pose channel connected'
-									: 'Connecting to local rover'}</span
-						>
-					</div>
-				</div>
-				<div class="session-details">
-					<div>
-						<span>Camera</span><span class:positive={status.video === 'connected'}
-							><span class="tiny-dot"></span>{status.video === 'connected'
-								? status.mode === 'demo'
-									? 'Simulated'
-									: 'Connected'
-								: 'Waiting'}</span
-						>
-					</div>
-					<div>
-						<span>Depth</span><span
-							>{quality === 'C'
-								? 'Off'
-								: status.mode === 'demo'
-									? 'Simulated'
-									: `Tier ${status.tier}`}</span
-						>
-					</div>
-					<div><span>World frame</span><span class="mono">{status.pose?.e ?? '—'}</span></div>
-				</div>
-				<div class="section-divider"></div>
-				<div class="items-heading">
-					<span class="eyebrow">FLOOR OBJECTS</span><span class="count-badge"
-						>{String(status.items.length).padStart(2, '0')}</span
-					>
-				</div>
-				<div class="object-list">
-					{#each status.items as item (item.id)}
-						<div class="object-row">
-							<span class="object-thumbnail" style={`--rock-color:${ITEM_TYPES[item.id].color}`}
-								><svg viewBox="0 0 48 48" aria-hidden="true"
-									><path d="m6 34 4-17 12-7 15 7 6 16-12 7-18-1Z" fill="currentColor" /><path
-										d="m10 17 12 8 15-8-15-7Z"
-										fill="#fff"
-										opacity=".19"
-									/><path d="m22 25 9 15 12-7-6-16Z" fill="#000" opacity=".19" /></svg
-								></span
-							>
-							<div>
-								<strong>{ITEM_TYPES[item.id].name}</strong><span
-									>ITEM {String(item.id).padStart(2, '0')} <span class="item-dot">·</span> floor anchored</span
-								>
-							</div>
-							<span class="item-distance">{distance(item.x, item.z)}<small> m</small></span>
-						</div>
-					{:else}<div class="empty-items">
-							<Icon name="cube" size={24} />
-							<p>Objects appear here when<br />their markers are detected.</p>
-						</div>{/each}
-				</div>
-				<div class="map-heading"><span class="eyebrow">LOCAL MAP</span><span>1 m grid</span></div>
-				<div class="local-map">
-					<svg viewBox="0 0 240 155" aria-label="Top-down map of rover and objects" role="img"
-						><defs
-							><pattern
-								id="map-grid"
-								width="80"
-								height="80"
-								patternUnits="userSpaceOnUse"
-								x="40"
-								y="52"
-								><path d="M80 0H0V80" fill="none" stroke="#343c35" stroke-width=".6" /><circle
-									cx="0"
-									cy="0"
-									r="1.3"
-									fill="#59634e"
-								/></pattern
-							></defs
-						><rect width="240" height="155" fill="url(#map-grid)" /><path
-							d={mapPath}
-							fill="none"
-							stroke="#9dbb68"
-							stroke-width="1.5"
-						/>{#each status.items as item (item.id)}<circle
-								cx={120 + item.x * 80}
-								cy={132 + item.z * 80}
-								r="4"
-								fill={ITEM_TYPES[item.id].color}
-							/>{/each}<g
-							transform={`translate(${120 + (status.pose?.x ?? 0) * 80},${132 + (status.pose?.z ?? 0) * 80}) rotate(${-Number(degrees(status.pose?.yaw ?? 0))})`}
-							><path d="M0 0-22-50Q0-58 22-50Z" fill="#c0e58a" opacity=".06" /><circle
-								r="10"
-								fill="#c0e58a"
-								opacity=".10"
-							/><path d="m0-7 5 12-5-2-5 2Z" fill="#c0e58a" /></g
-						><text x="14" y="20" fill="#737f6e" font-size="9" font-family="monospace">−Z</text><text
-							x="219"
-							y="142"
-							fill="#737f6e"
-							font-size="9"
-							font-family="monospace">+X</text
-						></svg
-					>
-					<div class="map-caption">
-						<span class="tiny-dot"></span> Rover
-						<span class="map-origin">Origin at last reset</span>
-					</div>
-				</div>
-				<button class="reset-button" onclick={() => resetDialog.showModal()} disabled={!ready}
-					><Icon name="reset" size={16} /><span>Reset world frame</span><Icon
-						name="chevron"
-						size={14}
-					/></button
-				>
-			</aside>
-		</div>
-		<div class="workspace-note">
-			<span
-				><Icon name="info" size={15} />{status.mode === 'demo'
-					? 'This is a simulation. Connect your rover to see the real world.'
-					: 'Calibration is pending. Measure the camera before assessing overlay accuracy.'}</span
-			><a href="/bench">Check device performance <Icon name="arrow" size={14} /></a>
-		</div>
+			<span class="closing-number">24 <small>MISSIONS. COUNTLESS STORIES.</small></span>
+		</section>
 	</main>
-	<footer>
-		<span>MADE TO EXPLORE</span><span
-			>Y UP <span> / </span> METRES <span> / </span> RIGHT-HANDED</span
-		><span class="footer-version">ROVER AR <span>v0.1</span></span>
+	<footer class="explorer-footer">
+		<span>rover. <small>A tribute to the explorers that stayed.</small></span>
+		<details>
+			<summary>Sources & credits</summary>
+			<p>
+				Mission research: NASA, JPL and NSSDCA. Mars and Moon textures: <a
+					href="https://www.solarsystemscope.com/textures/"
+					target="_blank"
+					rel="noreferrer">Solar System Scope</a
+				>,
+				<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer"
+					>CC BY 4.0</a
+				>. Ceres, Eros and trajectory views are illustrative. Independent project; not affiliated
+				with NASA.
+			</p>
+		</details>
+		<a
+			href="https://www.spaceappschallenge.org/2026/challenges/nasas-discarded-equipment-storytelling/?tab=resources"
+			target="_blank"
+			rel="noreferrer">INSPIRED BY NASA SPACE APPS ↗</a
+		>
 	</footer>
 </div>
 
-<dialog bind:this={resetDialog} class="modal">
-	<div class="modal-heading">
-		<span class="modal-icon"><Icon name="reset" size={24} /></span><button
-			class="icon-button"
-			onclick={() => resetDialog.close()}
-			aria-label="Close reset dialog"><Icon name="close" /></button
-		>
-	</div>
-	<h2>Start a new world frame?</h2>
-	<p>
-		{status.mode === 'demo'
-			? 'This resets the simulated rover and clears its objects. They will be detected again in the new world.'
-			: 'Keep the rover still. This zeroes its pose, recalibrates the gyro and clears objects for every connected viewer.'}
-	</p>
-	<div class="modal-actions">
-		<button class="secondary-button" onclick={() => resetDialog.close()}>Keep exploring</button
-		><button
-			class="primary-button"
-			onclick={() => {
-				viewer?.reset();
-				resetDialog.close();
-			}}>Reset frame <Icon name="arrow" size={16} /></button
-		>
-	</div>
-</dialog>
-
-<dialog bind:this={settingsDialog} class="modal settings-modal">
-	<div class="modal-heading">
-		<span class="eyebrow">VIEWER SETTINGS</span><button
-			class="icon-button"
-			onclick={() => settingsDialog.close()}
-			aria-label="Close settings"><Icon name="close" /></button
-		>
-	</div>
-	<h2>Your view, your device.</h2>
-	<label class="setting-label" for="depth-quality">Occlusion quality</label><select
-		id="depth-quality"
-		value={quality}
-		onchange={setQuality}
-		><option value="auto">Automatic · match this device</option><option value="A"
-			>Tier A · 518 × 294, target 10 Hz</option
-		><option value="B">Tier B · 322 × 182, target 3 Hz</option><option value="C"
-			>Off · video and objects only</option
-		></select
-	>
-	<p class="setting-help">
-		Automatic quality measures ten full cycles, then steps down if needed. It never steps up on its
-		own.
-	</p>
-	<div class="diagnostics">
-		<div><span>Marker detector</span><strong>{status.markers}</strong></div>
-		<div><span>Depth pipeline</span><strong>{status.depth}</strong></div>
-		<div>
-			<span>Full depth cycle</span><strong
-				>{status.depthMs === null ? '—' : `${status.depthMs.toFixed(1)} ms`}</strong
-			>
-		</div>
-		<div><span>Floor-fit inliers</span><strong>{(status.fit * 100).toFixed(0)}%</strong></div>
-		<div><span>Camera geometry</span><strong>{CAMERA.heightM} m / 10°</strong></div>
-	</div>
-	<a class="benchmark-button" href="/bench">Run depth benchmark <Icon name="arrow" size={16} /></a>
-	<p class="calibration-note">
-		Intrinsics and distortion are provisional. Calibration lives in <code>src/lib/ar/config.ts</code
-		>.
-	</p>
-</dialog>
+<style>
+	.explorer-page {
+		--line: #30382e;
+		--soft: #8f998a;
+		color: #e7eadf;
+		background: #101510;
+		min-height: 100vh;
+		font-family: Inter, 'Segoe UI', Arial, sans-serif;
+	}
+	.explorer-header {
+		height: 88px;
+		max-width: 1480px;
+		margin: auto;
+		padding: 0 56px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		border-bottom: 1px solid #293126;
+	}
+	.wordmark {
+		display: flex;
+		align-items: center;
+		font-size: 29px;
+		font-weight: 700;
+		letter-spacing: -1.3px;
+	}
+	.logo-orbit {
+		font-size: 35px;
+		color: #c1e58b;
+		margin-right: 10px;
+		font-weight: 400;
+	}
+	.period {
+		color: #c1e58b;
+	}
+	.brand-tag {
+		font-size: 9px;
+		font-weight: 400;
+		letter-spacing: 1.8px;
+		color: #a4ad9b;
+		margin-left: 25px;
+		padding-left: 25px;
+		border-left: 1px solid #3a4234;
+	}
+	.header-link {
+		font-size: 12px;
+		color: #c9cebf;
+	}
+	.header-link span {
+		margin-left: 24px;
+		color: #c1e58b;
+	}
+	.explorer-main {
+		max-width: 1480px;
+		margin: auto;
+		padding: 0 56px;
+	}
+	.intro {
+		display: flex;
+		justify-content: space-between;
+		padding: 57px 0 44px;
+		align-items: center;
+	}
+	.eyeline {
+		font-size: 9px;
+		letter-spacing: 2px;
+		color: #b3c29f;
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin: 0 0 23px;
+	}
+	.eyeline > span {
+		width: 5px;
+		height: 5px;
+		border-radius: 100%;
+		background: #c1e58b;
+	}
+	h1 {
+		font-weight: 400;
+		font-size: clamp(34px, 3.8vw, 57px);
+		line-height: 1.13;
+		letter-spacing: -2.4px;
+		margin: 0;
+	}
+	h1 em {
+		font-family: Georgia, serif;
+		color: #c1e58b;
+		font-weight: 400;
+	}
+	.intro-description {
+		color: #a0a898;
+		font-size: 13px;
+		line-height: 1.9;
+		margin: 23px 0 0;
+	}
+	.intro-aside {
+		text-align: right;
+		padding-top: 20px;
+	}
+	.orbit-symbol {
+		font-size: 54px;
+		font-weight: 200;
+		color: #859775;
+	}
+	.intro-aside p {
+		font-size: 12px;
+		line-height: 1.7;
+		color: #a7b09f;
+		margin: 10px 0 20px;
+	}
+	.archive-index {
+		font-family: monospace;
+		font-size: 8px;
+		letter-spacing: 1.5px;
+		color: #6f7e64;
+	}
+	.mission-explorer {
+		border: 1px solid var(--line);
+		border-radius: 10px;
+		overflow: hidden;
+		scroll-margin-top: 20px;
+	}
+	.explorer-top {
+		height: 65px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0 24px;
+		border-bottom: 1px solid var(--line);
+		background: #171d15;
+	}
+	.world-tabs {
+		display: flex;
+		gap: 8px;
+		align-items: center;
+	}
+	.world-tabs button {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 13px;
+		font-size: 11px;
+		color: #a2ad96;
+		background: none;
+		border-radius: 5px;
+		border: 1px solid transparent;
+		white-space: nowrap;
+	}
+	.world-tabs button.active {
+		background: #293321;
+		color: #dbedc1;
+		border-color: #45513a;
+	}
+	.world-tabs small {
+		font-family: monospace;
+		font-size: 8px;
+		color: #8d9b7f;
+	}
+	.world-dot {
+		width: 9px;
+		height: 9px;
+		border-radius: 100%;
+		background: linear-gradient(120deg, #a3a69b, #444a3f);
+		box-shadow: inset -2px -1px 2px #0007;
+	}
+	.world-dot.mars {
+		background: linear-gradient(120deg, #d19871, #7d4e34);
+	}
+	.live-key {
+		font-size: 8px;
+		letter-spacing: 1px;
+		color: #9fad91;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.live-key i {
+		width: 4px;
+		height: 4px;
+		background: #c1e58b;
+		border-radius: 50%;
+	}
+	.explorer-body {
+		display: grid;
+		grid-template-columns: 220px minmax(0, 1fr) 300px;
+		min-height: 590px;
+	}
+	.mission-list {
+		padding: 25px 15px 18px;
+		border-right: 1px solid var(--line);
+		display: flex;
+		flex-direction: column;
+		background: #141a12;
+	}
+	.list-heading {
+		display: flex;
+		justify-content: space-between;
+		color: #9aa78d;
+		font-size: 8px;
+		letter-spacing: 1.2px;
+		margin: 0 10px 20px;
+	}
+	.mission-buttons {
+		max-height: 456px;
+		overflow-y: auto;
+		scrollbar-width: thin;
+		scrollbar-color: #45543b transparent;
+		padding: 1px;
+	}
+	.mission-button {
+		display: flex;
+		align-items: center;
+		gap: 11px;
+		width: 100%;
+		padding: 13px 10px;
+		background: none;
+		color: #c5cdbd;
+		text-align: left;
+		border: 1px solid transparent;
+		border-radius: 5px;
+		margin-bottom: 4px;
+	}
+	.mission-button.active {
+		background: #25321d;
+		border-color: #465a34;
+		color: #e6efd9;
+	}
+	.mission-icon {
+		font-size: 19px;
+		color: #8f9b80;
+		width: 21px;
+		text-align: center;
+	}
+	.mission-button.active .mission-icon {
+		color: #c1e58b;
+	}
+	.mission-name {
+		font-size: 11px;
+		flex: 1;
+	}
+	.mission-name small {
+		display: block;
+		font-size: 9px;
+		color: #98a28c;
+		margin-top: 5px;
+	}
+	.mission-name b {
+		font-weight: 400;
+		margin: 0 3px;
+		color: #637059;
+	}
+	.mission-status {
+		font-size: 13px;
+		color: #76856a;
+	}
+	.mission-status.available {
+		color: #c1e58b;
+		font-size: 7px;
+	}
+	.list-foot {
+		font-size: 10px;
+		line-height: 1.7;
+		color: #7b8971;
+		margin: 20px 10px 0;
+		padding-top: 10px;
+	}
+	.world-stage {
+		min-width: 0;
+		position: relative;
+		min-height: 590px;
+		overflow: hidden;
+		background:
+			radial-gradient(ellipse at 45% 44%, #29322144, transparent 65%),
+			radial-gradient(circle at 12% 28%, #c6d4ac66 0 0.7px, transparent 1px),
+			radial-gradient(circle at 72% 63%, #c6d4ac44 0 0.7px, transparent 1px), #10160f;
+		background-size:
+			auto,
+			117px 137px,
+			173px 197px,
+			auto;
+	}
+	.world-stage :global(.globe) {
+		position: absolute;
+		inset: 0;
+		top: 30px;
+		height: calc(100% - 75px);
+	}
+	.world-caption {
+		position: absolute;
+		top: 27px;
+		left: 27px;
+		z-index: 4;
+		pointer-events: none;
+	}
+	.world-caption > span {
+		font-size: 7px;
+		letter-spacing: 1.7px;
+		color: #7f8f71;
+	}
+	.world-caption h2 {
+		font-size: 24px;
+		font-weight: 400;
+		letter-spacing: -0.8px;
+		margin: 8px 0 7px;
+	}
+	.world-caption p {
+		font-size: 7px;
+		letter-spacing: 1.6px;
+		color: #8e9b81;
+		margin: 0;
+	}
+	.world-bottom {
+		position: absolute;
+		bottom: 23px;
+		left: 27px;
+		right: 27px;
+		pointer-events: none;
+		display: flex;
+		flex-direction: column;
+		gap: 9px;
+	}
+	.world-bottom > span {
+		font-size: 7px;
+		letter-spacing: 1.2px;
+		color: #9caa8d;
+	}
+	.world-bottom small {
+		font-size: 9px;
+		color: #77866c;
+	}
+	.mission-detail {
+		padding: 26px 25px 22px;
+		border-left: 1px solid var(--line);
+		background: #171e14;
+		display: flex;
+		flex-direction: column;
+	}
+	.detail-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 27px;
+	}
+	.detail-label,
+	.file-number {
+		font-size: 8px;
+		letter-spacing: 1.4px;
+		color: #a6b197;
+	}
+	.file-number {
+		font-family: monospace;
+		font-size: 8px;
+		color: #6c7b60;
+	}
+	.availability {
+		align-self: flex-start;
+		font-size: 7px;
+		letter-spacing: 1px;
+		color: #b4b9a7;
+		border: 1px solid #47503c;
+		padding: 6px 8px;
+		border-radius: 3px;
+	}
+	.availability.playable {
+		color: #c1e58b;
+		background: #25331d;
+		border-color: #445c31;
+	}
+	.mission-detail h2 {
+		font-size: 31px;
+		font-weight: 400;
+		letter-spacing: -1px;
+		margin: 18px 0 7px;
+	}
+	.mission-type {
+		font-size: 10px;
+		color: #a5b196;
+		margin: 0;
+	}
+	.mission-type span {
+		color: #58654c;
+		padding: 0 6px;
+	}
+	.mission-description {
+		font-size: 11px;
+		line-height: 1.9;
+		color: #b0baa4;
+		margin: 20px 0;
+	}
+	dl {
+		margin: 0;
+		display: grid;
+		gap: 17px;
+		padding: 20px 0;
+		border-top: 1px solid #303c27;
+		border-bottom: 1px solid #303c27;
+	}
+	dt {
+		font-size: 7px;
+		letter-spacing: 1.3px;
+		color: #8a9a7a;
+		margin-bottom: 7px;
+	}
+	dd {
+		margin: 0;
+		color: #d8dfce;
+		font-size: 11px;
+	}
+	.coordinate-value {
+		font-family: monospace;
+		font-size: 10px;
+		color: #b5c6a1;
+	}
+	.remains {
+		margin: 17px 0 20px;
+	}
+	.remains > span {
+		font-size: 7px;
+		letter-spacing: 1.3px;
+		color: #9bad89;
+	}
+	.remains p {
+		font-size: 10px;
+		line-height: 1.7;
+		color: #a2af94;
+		margin: 7px 0 0;
+	}
+	.play-button,
+	.coming-soon {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 14px 15px;
+		border-radius: 4px;
+		font-size: 12px;
+		margin-top: auto;
+	}
+	.play-button {
+		background: #c1e58b;
+		color: #1a2810;
+		font-weight: 600;
+	}
+	.play-button:hover {
+		background: #d3f0aa;
+	}
+	.coming-soon {
+		background: #283022;
+		color: #a7b59a;
+		border: 1px solid #3e4a33;
+	}
+	.play-caption {
+		font-size: 8px;
+		text-align: center;
+		color: #8a9a7a;
+		margin: 10px 0 18px;
+	}
+	.source-link {
+		font-size: 8px;
+		color: #94a582;
+		display: flex;
+		justify-content: space-between;
+	}
+	.closing {
+		display: flex;
+		align-items: center;
+		padding: 33px 0 35px;
+		gap: 16px;
+	}
+	.closing-icon {
+		font-size: 29px;
+		color: #92a77c;
+	}
+	.closing h2 {
+		font-size: 14px;
+		font-weight: 400;
+		margin: 0 0 7px;
+	}
+	.closing p {
+		font-size: 10px;
+		color: #8e9a81;
+		margin: 0;
+	}
+	.closing-number {
+		font-size: 30px;
+		color: #c1d4aa;
+		margin-left: auto;
+		display: flex;
+		align-items: center;
+		gap: 15px;
+	}
+	.closing-number small {
+		max-width: 110px;
+		font-size: 7px;
+		line-height: 1.8;
+		letter-spacing: 1.3px;
+		color: #94a481;
+	}
+	.explorer-footer {
+		max-width: 1368px;
+		margin: auto;
+		border-top: 1px solid #2c3526;
+		padding: 24px 0 30px;
+		display: flex;
+		align-items: flex-start;
+		gap: 25px;
+		justify-content: space-between;
+		color: #a8b49a;
+		font-size: 15px;
+	}
+	.explorer-footer small {
+		font-size: 9px;
+		color: #7f8c72;
+		margin-left: 15px;
+	}
+	.explorer-footer > a {
+		font-size: 7px;
+		letter-spacing: 1px;
+		color: #859677;
+		padding-top: 5px;
+	}
+	.explorer-footer details {
+		font-size: 9px;
+		color: #849479;
+		max-width: 350px;
+		line-height: 1.7;
+	}
+	.explorer-footer summary {
+		cursor: pointer;
+	}
+	.explorer-footer details a {
+		text-decoration: underline;
+	}
+	.space-diagram {
+		position: absolute;
+		inset: 100px 0 60px;
+	}
+	.space-diagram svg {
+		width: 100%;
+		height: 100%;
+	}
+	.space-pin {
+		position: absolute;
+		padding: 9px;
+		border: 1px solid #566448;
+		background: #141d10;
+		color: #b8c4aa;
+		border-radius: 4px;
+		font-size: 10px;
+	}
+	.space-pin.chosen {
+		border-color: #c1e58b;
+		color: #d9f2ba;
+		background: #2a3a1e;
+	}
+	.pioneer10 {
+		right: 6%;
+		top: 14%;
+	}
+	.pioneer11 {
+		left: 4%;
+		top: 21%;
+	}
+	.kepler {
+		left: 51%;
+		top: 64%;
+	}
+	@media (min-width: 1500px) {
+		.explorer-body {
+			grid-template-columns: 235px minmax(0, 1fr) 320px;
+		}
+		.world-stage {
+			min-height: 620px;
+		}
+	}
+	@media (max-width: 1150px) {
+		.explorer-header {
+			padding: 0 28px;
+		}
+		.explorer-main {
+			padding: 0 28px;
+		}
+		.explorer-body {
+			grid-template-columns: 180px minmax(0, 1fr) 270px;
+		}
+		.mission-detail {
+			padding: 24px 19px;
+		}
+		.mission-list {
+			padding: 24px 8px;
+		}
+		.live-key {
+			display: none;
+		}
+		.explorer-footer {
+			margin: 0 28px;
+		}
+		.world-stage {
+			min-height: 620px;
+		}
+		.world-caption {
+			left: 20px;
+		}
+		.world-bottom {
+			left: 20px;
+		}
+		.mission-name {
+			font-size: 10px;
+		}
+	}
+	@media (max-width: 850px) {
+		.explorer-body {
+			grid-template-columns: 190px minmax(0, 1fr);
+		}
+		.mission-detail {
+			grid-column: 1/-1;
+			border-left: 0;
+			border-top: 1px solid var(--line);
+			display: block;
+		}
+		.world-stage {
+			min-height: 490px;
+		}
+		.mission-list {
+			max-height: 490px;
+		}
+		.detail-top {
+			margin-bottom: 16px;
+		}
+		.availability {
+			display: inline-block;
+		}
+		.mission-detail h2 {
+			margin-top: 13px;
+		}
+		.mission-description {
+			max-width: 600px;
+		}
+		dl {
+			grid-template-columns: 1fr 1fr;
+		}
+		.intro-aside {
+			display: none;
+		}
+		.intro {
+			padding-top: 42px;
+		}
+		h1 {
+			font-size: 46px;
+		}
+		.explorer-footer {
+			flex-wrap: wrap;
+		}
+		.play-button,
+		.coming-soon {
+			max-width: 100%;
+		}
+		.source-link {
+			justify-content: flex-start;
+			gap: 12px;
+		}
+		.mission-list .list-foot {
+			display: none;
+		}
+	}
+	@media (max-width: 560px) {
+		.explorer-header {
+			height: 70px;
+			padding: 0 20px;
+		}
+		.wordmark {
+			font-size: 25px;
+		}
+		.logo-orbit {
+			font-size: 29px;
+		}
+		.brand-tag {
+			display: none;
+		}
+		.header-link {
+			font-size: 10px;
+		}
+		.header-link span {
+			margin-left: 8px;
+		}
+		.explorer-main {
+			padding: 0 16px;
+		}
+		.intro {
+			padding: 34px 4px 30px;
+		}
+		.eyeline {
+			font-size: 7px;
+			letter-spacing: 1.5px;
+			margin-bottom: 19px;
+		}
+		h1 {
+			font-size: 36px;
+			letter-spacing: -1.7px;
+		}
+		.intro-description {
+			font-size: 11px;
+			line-height: 1.9;
+			margin-top: 18px;
+		}
+		.explorer-top {
+			padding: 0 10px;
+			height: 57px;
+			overflow-x: auto;
+		}
+		.world-tabs {
+			gap: 2px;
+		}
+		.world-tabs button {
+			padding: 9px 10px;
+			font-size: 10px;
+		}
+		.world-tabs small {
+			display: none;
+		}
+		.world-dot {
+			width: 7px;
+			height: 7px;
+		}
+		.explorer-body {
+			display: flex;
+			flex-direction: column;
+		}
+		.world-stage {
+			order: 0;
+			height: 390px;
+			min-height: 390px;
+		}
+		.mission-list {
+			order: 1;
+			border-right: 0;
+			border-top: 1px solid var(--line);
+			padding: 18px 12px 12px;
+		}
+		.list-heading {
+			margin-bottom: 12px;
+		}
+		.mission-buttons {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			max-height: 220px;
+			gap: 2px;
+		}
+		.mission-button {
+			padding: 10px 6px;
+			gap: 6px;
+		}
+		.mission-name {
+			font-size: 10px;
+		}
+		.mission-name small {
+			font-size: 8px;
+		}
+		.mission-icon {
+			font-size: 17px;
+			width: 18px;
+		}
+		.mission-detail {
+			order: 2;
+			padding: 24px;
+		}
+		.world-caption {
+			top: 20px;
+		}
+		.world-caption h2 {
+			font-size: 22px;
+		}
+		.world-bottom {
+			bottom: 17px;
+		}
+		.closing {
+			padding: 25px 4px;
+			gap: 12px;
+		}
+		.closing h2 {
+			font-size: 12px;
+		}
+		.closing p {
+			font-size: 9px;
+			max-width: 240px;
+			line-height: 1.6;
+		}
+		.closing-number {
+			display: none;
+		}
+		.explorer-footer {
+			margin: 0 20px;
+			gap: 18px;
+			flex-direction: column;
+		}
+		.explorer-footer small {
+			font-size: 8px;
+		}
+		.space-diagram {
+			inset: 70px 0 50px;
+		}
+	}
+</style>

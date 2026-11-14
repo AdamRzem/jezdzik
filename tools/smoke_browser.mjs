@@ -18,7 +18,7 @@ page.on('response', (response) => {
 	if (response.status() >= 400) console.log(`HTTP ${response.status()} ${response.url()}`);
 });
 try {
-	await page.goto(base);
+	await page.goto(`${base}/play`);
 	await page.waitForFunction(() =>
 		document.querySelector('.frame-badge')?.textContent?.match(/F \d/)
 	);
