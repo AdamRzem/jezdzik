@@ -916,18 +916,22 @@ function makeSojourner(material = 'metal') {
 
 // ---------------------------------------------------------------- ground
 
-function makeGround(size = 30, seg = 64) {
+// o.blast: radius in metres of soil darkened around the origin by landing rockets.
+function makeGround(size = 30, seg = 64, o = {}) {
 	const m = newMesh('ground');
-	const a = hex('#b06a3c');
-	const b = hex('#c98b58');
-	const dark = hex('#8d5633');
+	const a = o.a ?? hex('#b06a3c');
+	const b = o.b ?? hex('#c98b58');
+	const dark = o.dark ?? hex('#8d5633');
+	const s = o.seed ?? 77;
 	for (let j = 0; j <= seg; j++)
 		for (let i = 0; i <= seg; i++) {
 			const x = (i / seg - 0.5) * size;
 			const z = (j / seg - 0.5) * size;
-			let c = mix(a, b, smooth(-0.35, 0.4, fbm(x * 0.18, 0, z * 0.18, 77, 4)));
-			c = mix(c, dark, 0.5 * smooth(0.1, 0.6, fbm(x * 0.6, 3, z * 0.6, 78, 3)));
-			const g = 0.92 + 0.16 * noise(x * 3, 0, z * 3, 79);
+			let c = mix(a, b, smooth(-0.35, 0.4, fbm(x * 0.18, 0, z * 0.18, s, 4)));
+			c = mix(c, dark, 0.5 * smooth(0.1, 0.6, fbm(x * 0.6, 3, z * 0.6, s + 1, 3)));
+			if (o.blast)
+				c = mix(c, dark, 0.55 * (1 - smooth(o.blast * 0.4, o.blast * 1.3, Math.hypot(x, z))));
+			const g = 0.92 + 0.16 * noise(x * 3, 0, z * 3, s + 2);
 			addVertex(m, [x, 0, z], [c[0] * g, c[1] * g, c[2] * g]);
 			m.normals.push(0, 1, 0);
 		}
@@ -938,6 +942,289 @@ function makeGround(size = 30, seg = 64) {
 		}
 	return m;
 }
+
+// ---------------------------------------------------------------- InSight
+
+const CI = {
+	deck: hex('#cfcac0'),
+	gold: hex('#b08a3e'),
+	solar: hex('#20263f'),
+	rib: hex('#8f8d86'),
+	strut: hex('#9a9da1'),
+	dark: hex('#26262a'),
+	white: hex('#ecebe6'),
+	copper: hex('#b06a3a'),
+	copperLight: hex('#c98552'),
+	skirt: hex('#a98f5a'),
+	tether: hex('#c79a3c')
+};
+
+// Box of cross-section w x h between two points.
+function beam(p0, p1, w, h, color) {
+	const d = [p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]];
+	const len = Math.hypot(d[0], d[1], d[2]);
+	const dir = d.map((v) => v / len);
+	const ref = Math.abs(dir[1]) > 0.9 ? [1, 0, 0] : [0, 1, 0];
+	let u = [
+		dir[1] * ref[2] - dir[2] * ref[1],
+		dir[2] * ref[0] - dir[0] * ref[2],
+		dir[0] * ref[1] - dir[1] * ref[0]
+	];
+	const ul = Math.hypot(u[0], u[1], u[2]);
+	u = u.map((v) => v / ul);
+	const v = [
+		dir[1] * u[2] - dir[2] * u[1],
+		dir[2] * u[0] - dir[0] * u[2],
+		dir[0] * u[1] - dir[1] * u[0]
+	];
+	const m = newMesh('beam');
+	for (const p of [p0, p1])
+		for (const [su, sv] of [
+			[-1, -1],
+			[1, -1],
+			[1, 1],
+			[-1, 1]
+		])
+			addVertex(
+				m,
+				[0, 1, 2].map((k) => p[k] + (u[k] * su * w) / 2 + (v[k] * sv * h) / 2),
+				color
+			);
+	m.indices.push(0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7);
+	for (let i = 0; i < 4; i++) {
+		const j = (i + 1) % 4;
+		m.indices.push(i, j, 4 + j, i, 4 + j, 4 + i);
+	}
+	return fixConvexWinding(m);
+}
+
+// Surface of revolution around the y axis. profile is [radius, y] from bottom to top.
+function lathe(name, profile, seg, colorAt) {
+	const m = newMesh(name);
+	for (let j = 0; j < profile.length; j++)
+		for (let i = 0; i < seg; i++) {
+			const a = (i / seg) * Math.PI * 2;
+			const [r, y] = profile[j];
+			addVertex(m, [Math.cos(a) * r, y, Math.sin(a) * r], colorAt(j, a));
+		}
+	for (let j = 0; j < profile.length - 1; j++)
+		for (let i = 0; i < seg; i++) {
+			const a = j * seg + i;
+			const b = j * seg + ((i + 1) % seg);
+			m.indices.push(a, a + seg, b, b, a + seg, b + seg);
+		}
+	return computeSmoothNormals(m);
+}
+
+const ring = (r, n, rot = 0) =>
+	Array.from({ length: n }, (_, i) => {
+		const a = rot + (i / n) * Math.PI * 2;
+		return [Math.cos(a) * r, Math.sin(a) * r];
+	});
+
+const shieldColour = (skirtRows) => (j, a) => {
+	if (j < skirtRows) return CI.skirt.map((v) => v * (0.78 + 0.22 * Math.cos(a * 18)));
+	if (j === skirtRows) return CI.strut.map((v) => v * 0.7);
+	return CI.white.map((v) => v * (Math.abs(Math.sin(a * 3)) < 0.06 ? 0.85 : 1));
+};
+
+// Instruments sized to hide a 10 cm cube, like the rock covers. Stylised, not to scale.
+function insightCovers() {
+	const shield = lathe(
+		'cover-seis-shield',
+		[
+			[0.14, 0],
+			[0.138, 0.012],
+			[0.128, 0.03],
+			[0.114, 0.036],
+			[0.113, 0.07],
+			[0.108, 0.092],
+			[0.097, 0.106],
+			[0.09, 0.1095],
+			[0.07, 0.1165],
+			[0.04, 0.1193],
+			[0, 0.12]
+		],
+		48,
+		shieldColour(3)
+	);
+
+	const feet = (r, radius, h, n, rot = 0) =>
+		ring(r, n, rot).map(([x, z]) => translate(cylinder(radius, h, 8, CI.strut), x, 0, z));
+	const tetherStub = () => translate(box(0.05, 0.004, 0.1, CI.tether), 0, 0.001, 0.16);
+
+	const seis = hard('cover-seis', 'metal', [
+		prism(ring(0.118, 6), 0, 0.1, CI.copper),
+		prism(ring(0.121, 6), 0.045, 0.055, CI.dark),
+		prism(ring(0.1, 6), 0.1, 0.112, CI.copperLight),
+		translate(cylinder(0.02, 0.008, 10, CI.strut), 0, 0.112, 0),
+		...feet(0.137, 0.016, 0.03, 3, Math.PI / 6),
+		tetherStub()
+	]);
+
+	const probe = hard('cover-heat-probe', 'metal', [
+		prism(ring(0.112, 8, Math.PI / 8), 0, 0.104, CI.dark),
+		prism(ring(0.1, 8, Math.PI / 8), 0.104, 0.11, CI.gold),
+		translate(cylinder(0.022, 0.01, 10, CI.strut), 0.03, 0.11, 0),
+		...feet(0.15, 0.018, 0.012, 4, Math.PI / 4),
+		tetherStub()
+	]);
+
+	return [
+		{
+			id: 'seis',
+			label: 'Seismometer (SEIS)',
+			mesh: seis,
+			note: 'The copper-coloured seismometer. Stylised to hide a 10 cm cube; not to scale.'
+		},
+		{
+			id: 'seis-shield',
+			label: 'Wind and Thermal Shield',
+			mesh: shield,
+			note: 'The dome placed over the seismometer to protect it from wind and temperature swings. Stylised to hide a 10 cm cube; not to scale.'
+		},
+		{
+			id: 'heat-probe',
+			label: 'Heat probe (HP3)',
+			mesh: probe,
+			note: 'The heat flow probe and its support structure. Stylised to hide a 10 cm cube; not to scale.'
+		}
+	];
+}
+
+// True-scale InSight. Deck 1.56 m across, two ten-sided 2.15 m solar arrays spanning 6 m,
+// deck about 0.95 m above the ground, 1.8 m robotic arm (all sourced). Detail is schematic.
+// Front (the instrument workspace) is +z, which is south.
+function makeInsight() {
+	const deckTop = 0.95;
+	const parts = [];
+	parts.push(prism(ring(0.78, 12), deckTop - 0.12, deckTop, CI.deck));
+	parts.push(translate(cylinder(0.55, 0.3, 12, CI.gold), 0, deckTop - 0.42, 0));
+
+	// Three legs with footpads
+	for (const deg of [30, 150, 270]) {
+		const a = deg * DEG;
+		const foot = [Math.cos(a) * 1.12, 0.06, Math.sin(a) * 1.12];
+		parts.push(
+			beam([Math.cos(a) * 0.6, deckTop - 0.12, Math.sin(a) * 0.6], foot, 0.05, 0.05, CI.strut)
+		);
+		for (const off of [-28, 28]) {
+			const b = (deg + off) * DEG;
+			parts.push(
+				beam([Math.cos(b) * 0.5, deckTop - 0.35, Math.sin(b) * 0.5], foot, 0.03, 0.03, CI.strut)
+			);
+		}
+		parts.push(translate(cylinder(0.14, 0.04, 12, CI.strut), foot[0], 0, foot[2]));
+	}
+
+	// Solar arrays, east and west
+	for (const side of [-1, 1]) {
+		const cx = side * 1.925;
+		parts.push(translate(prism(ring(1.075, 10), deckTop - 0.02, deckTop, CI.solar), cx, 0, 0));
+		for (const [x, z] of ring(1.075, 10))
+			parts.push(beam([cx, deckTop + 0.004, 0], [cx + x, deckTop + 0.004, z], 0.02, 0.006, CI.rib));
+		parts.push(
+			beam([side * 0.6, deckTop - 0.06, 0], [cx, deckTop - 0.03, 0], 0.06, 0.04, CI.strut)
+		);
+	}
+
+	// Robotic arm, reaching out over the workspace
+	const shoulder = [0.25, deckTop + 0.1, 0.6];
+	const elbow = [0.25, deckTop + 0.6, 1.15];
+	const wrist = [0.25, deckTop - 0.1, 1.72];
+	parts.push(translate(cylinder(0.05, 0.1, 10, CI.strut), shoulder[0], deckTop, shoulder[2]));
+	parts.push(beam(shoulder, elbow, 0.05, 0.05, CI.white));
+	parts.push(beam(elbow, wrist, 0.045, 0.045, CI.white));
+	parts.push(beam(wrist, [wrist[0], wrist[1] - 0.3, wrist[2]], 0.008, 0.008, CI.dark)); // grapple cable
+	parts.push(translate(box(0.07, 0.05, 0.07, CI.dark), wrist[0], wrist[1] - 0.35, wrist[2])); // grapple
+	parts.push(translate(box(0.08, 0.07, 0.1, CI.dark), 0.25, deckTop + 0.38, 1.33)); // arm camera
+	parts.push(translate(box(0.1, 0.06, 0.12, CI.strut), 0.33, wrist[1], wrist[2])); // scoop
+
+	// Deck equipment
+	parts.push(translate(cylinder(0.06, 0.25, 10, CI.white), -0.35, deckTop, -0.3)); // UHF antenna
+	for (const side of [-1, 1]) {
+		parts.push(translate(box(0.1, 0.12, 0.1, CI.gold), side * 0.45, deckTop, -0.45)); // medium-gain horns
+		parts.push(translate(cylinder(0.012, 0.25, 6, CI.strut), side * 0.62, deckTop, 0.2)); // weather booms
+		parts.push(translate(box(0.12, 0.02, 0.02, CI.strut), side * 0.66, deckTop + 0.24, 0.2));
+	}
+	parts.push(translate(box(0.26, 0.1, 0.16, CI.gold), -0.2, deckTop, 0.5)); // tether storage box
+	parts.push(translate(cylinder(0.04, 0.03, 10, CI.white), 0.05, deckTop, -0.1)); // pressure inlet
+	const lander = hard('insight-lander', 'metal', parts);
+
+	// Instruments on the ground
+	const shield = lathe(
+		'insight-seis-shield',
+		[
+			[0.43, 0],
+			[0.42, 0.03],
+			[0.39, 0.08],
+			[0.35, 0.1],
+			[0.35, 0.2],
+			[0.33, 0.27],
+			[0.27, 0.33],
+			[0.17, 0.37],
+			[0.07, 0.385],
+			[0, 0.39]
+		],
+		40,
+		shieldColour(3)
+	);
+	const probe = hard('insight-heat-probe', 'metal', [
+		translate(box(0.34, 0.06, 0.3, CI.dark), 0, 0.05, 0),
+		...ring(0.21, 4, Math.PI / 4).map(([x, z]) =>
+			translate(cylinder(0.03, 0.05, 8, CI.strut), x, 0, z)
+		),
+		translate(box(0.2, 0.14, 0.22, CI.dark), 0, 0.11, 0),
+		translate(cylinder(0.03, 0.45, 10, CI.strut), 0.05, 0.11, 0), // tube that held the mole
+		translate(box(0.12, 0.1, 0.18, CI.gold), -0.09, 0.11, -0.02)
+	]);
+
+	// Tethers: flat ribbon cables from the deck to each instrument
+	const tether = (to) =>
+		hard(
+			'insight-tether',
+			'matte',
+			[
+				[
+					[-0.2, deckTop, 0.7],
+					[-0.15, 0.012, 1.1]
+				],
+				[
+					[-0.15, 0.012, 1.1],
+					[to[0], 0.012, to[2] - 0.3]
+				]
+			].map(([p, q]) => beam(p, q, 0.06, 0.006, CI.tether))
+		);
+	return { lander, shield, probe, tether };
+}
+
+const INSIGHT_SOURCES = {
+	nasaMission: 'https://science.nasa.gov/mission/insight/',
+	pressKit: 'https://www.jpl.nasa.gov/news/press_kits/insight/landing/facts',
+	firstInstrument: 'https://www.jpl.nasa.gov/news/nasas-insight-places-first-instrument-on-mars/'
+};
+
+// Lander at the origin. Instruments were set down to the south of the lander.
+const INSIGHT_ITEMS = [
+	{
+		id: 'seis',
+		label: 'Seismometer under its Wind and Thermal Shield',
+		east: 0.2,
+		north: -2.0,
+		position: 'approximate',
+		source: INSIGHT_SOURCES.firstInstrument,
+		note: 'Placed on 19 December 2018, 1.636 m from the lander, about as far as the arm could reach (sourced). Which point of the lander that is measured from is not stated, so the modelled spot is approximate. The shield size is approximate.'
+	},
+	{
+		id: 'heat-probe',
+		label: 'Heat probe (HP3)',
+		east: 1.4,
+		north: -2.0,
+		position: 'approximate',
+		source: INSIGHT_SOURCES.firstInstrument,
+		note: 'Planned about 1.2 m to the left of the seismometer, at a similar distance from the lander. Size approximate.'
+	}
+];
 
 // ---------------------------------------------------------------- GLB writer
 
@@ -1246,6 +1533,7 @@ for (const id of Object.keys(RECIPES)) {
 	manifest.push({
 		id: `cover-${id}`,
 		group: 'cover',
+		cover: true,
 		label: RECIPES[id].label,
 		file: out.file,
 		triangles: out.triangles,
@@ -1396,8 +1684,149 @@ site.children.push(field);
 	});
 }
 
+// InSight: instrument covers
+for (const c of insightCovers()) {
+	const check = checkCover(c.mesh);
+	const out = writeGLB(`cover/${c.id}.glb`, [node(`cover-${c.id}`, c.mesh)]);
+	report.push({
+		model: out.file,
+		tris: out.triangles,
+		kB: +(out.bytes / 1024).toFixed(0),
+		'w x h x d (cm)': `${(check.width * 100).toFixed(1)} x ${(check.height * 100).toFixed(1)} x ${(check.depth * 100).toFixed(1)}`,
+		'hides cube': check.ok ? 'yes' : 'NO',
+		'min side r (cm)': +(check.minSide * 100).toFixed(2),
+		'min top y (cm)': Number.isFinite(check.minTop) ? +(check.minTop * 100).toFixed(2) : 'flat top'
+	});
+	manifest.push({
+		id: `cover-${c.id}`,
+		group: 'cover-insight',
+		cover: true,
+		label: c.label,
+		file: out.file,
+		triangles: out.triangles,
+		note: c.note
+	});
+	if (!check.ok) process.exitCode = 1;
+}
+
+// InSight: true-scale site
+{
+	const insight = makeInsight();
+	const insightGround = makeGround(20, 48, {
+		a: hex('#a8683f'),
+		b: hex('#bb7d50'),
+		dark: hex('#7c4c30'),
+		seed: 300,
+		blast: 3
+	});
+	const at = (id) => {
+		const f = INSIGHT_ITEMS.find((i) => i.id === id);
+		return [f.east, 0, -f.north];
+	};
+	const single = [
+		[
+			'insight/lander.glb',
+			[node('insight-lander', insight.lander)],
+			'InSight lander',
+			'Deck 1.56 m across, two 2.15 m solar arrays spanning 6 m, 1.8 m robotic arm (sourced). Detail is schematic.'
+		],
+		[
+			'insight/seis-shield.glb',
+			[node('insight-seis-shield', insight.shield)],
+			'Wind and Thermal Shield (true scale)',
+			'The dome over the seismometer. Size approximate.'
+		],
+		[
+			'insight/heat-probe.glb',
+			[node('insight-heat-probe', insight.probe)],
+			'Heat probe (true scale)',
+			'Support structure with the tube that held the self-hammering probe. Size approximate.'
+		]
+	];
+	for (const [file, roots, label, note] of single) {
+		const out = writeGLB(file, roots);
+		report.push({ model: out.file, tris: out.triangles, kB: +(out.bytes / 1024).toFixed(0) });
+		manifest.push({
+			id: file.replace(/\.glb$/, '').replace('/', '-'),
+			group: 'insight',
+			label,
+			file: out.file,
+			triangles: out.triangles,
+			note
+		});
+	}
+
+	// Elysium Planitia is flat and sandy with few rocks, unlike Ares Vallis.
+	const scatter = node('rock-field');
+	const rand = rng(2018);
+	let placed = 0;
+	while (placed < 45) {
+		const a = rand() * Math.PI * 2;
+		const d = 3.4 + Math.sqrt(rand()) * 6;
+		const s = 0.03 + 0.14 * Math.pow(rand(), 2);
+		scatter.children.push(
+			node('pebble', pebbles[Math.floor(rand() * pebbles.length)], {
+				t: [+(Math.cos(a) * d).toFixed(3), 0, +(Math.sin(a) * d).toFixed(3)],
+				yaw: +(rand() * Math.PI * 2).toFixed(3),
+				scale: [s, s, s].map((v) => +v.toFixed(3))
+			})
+		);
+		placed++;
+	}
+
+	const elysium = node('elysium-planitia');
+	elysium.children.push(node('ground', insightGround));
+	elysium.children.push(node('insight-lander', insight.lander));
+	elysium.children.push(node('insight-seis-shield', insight.shield, { t: at('seis') }));
+	elysium.children.push(node('insight-heat-probe', insight.probe, { t: at('heat-probe') }));
+	elysium.children.push(node('tether-seis', insight.tether(at('seis'))));
+	elysium.children.push(node('tether-heat-probe', insight.tether(at('heat-probe'))));
+	elysium.children.push(scatter);
+	const out = writeGLB('insight/elysium-planitia.glb', [elysium]);
+	report.push({ model: out.file, tris: out.triangles, kB: +(out.bytes / 1024).toFixed(0) });
+	manifest.push({
+		id: 'insight-elysium-planitia',
+		group: 'insight',
+		label: 'Whole InSight site',
+		file: out.file,
+		triangles: out.triangles,
+		note: 'Lander, both instruments with their tethers, and the soil darkened by the landing rockets, at true scale. Instrument positions are approximate.'
+	});
+}
+
 // Layout and manifest
 const layout = {
+	groups: [
+		{ id: 'cover', title: 'Cube covers: Sojourner rocks' },
+		{ id: 'cover-insight', title: 'Cube covers: InSight instruments' },
+		{ id: 'site', title: 'Pathfinder site (true scale)' },
+		{ id: 'insight', title: 'InSight site (true scale)' }
+	],
+	insight: {
+		frame:
+			'Lander at the origin, solar arrays east and west, instruments to the south. east and north are metres at true scale.',
+		facts: {
+			type: 'A stationary lander, not a rover',
+			landing: '26 November 2018, Elysium Planitia',
+			endOfMission: '15 December 2022',
+			deckDiameter: '1.56 m',
+			solarArrays: 'two ten-sided arrays, each 2.15 m across; 6.00 m span when open',
+			deckHeight: '0.83 to 1.08 m above the ground',
+			arm: '1.8 m robotic arm that lifted the instruments off the deck and set them on the ground',
+			seismometerPlaced: '19 December 2018, 1.636 m from the lander'
+		},
+		lander: { east: 0, north: 0, model: 'insight/lander.glb' },
+		instruments: INSIGHT_ITEMS.map((i) => ({
+			id: i.id,
+			label: i.label,
+			east: i.east,
+			north: i.north,
+			confidence: { position: i.position },
+			source: i.source,
+			note: i.note
+		})),
+		sources: INSIGHT_SOURCES
+	},
 	frame:
 		'Lander at the origin. east and north are metres at true scale. In Three.js use x = east, y = up, z = -north.',
 	confidence: {

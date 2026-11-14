@@ -6,7 +6,8 @@
 
 	type Model = {
 		id: string;
-		group: 'cover' | 'site';
+		group: string;
+		cover?: boolean;
 		label: string;
 		file: string;
 		triangles: number;
@@ -19,6 +20,7 @@
 
 	let canvas = $state<HTMLCanvasElement>();
 	let models = $state<Model[]>([]);
+	let groups = $state<{ id: string; title: string }[]>([]);
 	let selected = $state<Model | null>(null);
 	let showCube = $state(false);
 	let error = $state('');
@@ -64,7 +66,7 @@
 	}
 
 	function applyCube() {
-		const on = showCube && selected?.group === 'cover';
+		const on = showCube && selected?.cover === true;
 		cube.visible = on;
 		current?.traverse((o) => {
 			const mesh = o as THREE.Mesh;
@@ -88,7 +90,7 @@
 			if (current) scene.remove(current);
 			current = gltf.scene;
 			scene.add(current);
-			floor.visible = !/ares-vallis|ground/.test(model.id);
+			floor.visible = !/ares-vallis|elysium|ground/.test(model.id);
 			applyCube();
 			frame(rover);
 		} catch (e) {
@@ -144,6 +146,7 @@
 			.then((r) => r.json())
 			.then((layout) => {
 				models = layout.models;
+				groups = layout.groups;
 				const params = new URLSearchParams(location.search);
 				const wanted = params.get('model') ?? 'cover-barnacle-bill';
 				showCube = params.has('cube');
@@ -171,8 +174,8 @@
 	<aside
 		class="max-h-[40vh] w-full shrink-0 overflow-y-auto border-stone-700 p-4 md:max-h-none md:w-72 md:border-r"
 	>
-		<h1 class="text-lg font-semibold">Pathfinder site models</h1>
-		{#each [['cover', 'Cube covers (stylised)'], ['site', 'Landing site (true scale)']] as [group, title] (group)}
+		<h1 class="text-lg font-semibold">Mars models</h1>
+		{#each groups as { id: group, title } (group)}
 			<h2 class="mt-4 mb-1 text-xs tracking-wide text-stone-400 uppercase">{title}</h2>
 			<ul>
 				{#each models.filter((m) => m.group === group) as model (model.id)}
@@ -205,7 +208,7 @@
 					<button class="rounded bg-stone-700 px-2 py-1 hover:bg-stone-600" onclick={() => frame()}>
 						Reset view
 					</button>
-					{#if selected.group === 'cover'}
+					{#if selected.cover}
 						<button
 							class="rounded bg-stone-700 px-2 py-1 hover:bg-stone-600"
 							onclick={() => frame(true)}

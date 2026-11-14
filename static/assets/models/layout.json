@@ -1,4 +1,69 @@
 {
+	"groups": [
+		{
+			"id": "cover",
+			"title": "Cube covers: Sojourner rocks"
+		},
+		{
+			"id": "cover-insight",
+			"title": "Cube covers: InSight instruments"
+		},
+		{
+			"id": "site",
+			"title": "Pathfinder site (true scale)"
+		},
+		{
+			"id": "insight",
+			"title": "InSight site (true scale)"
+		}
+	],
+	"insight": {
+		"frame": "Lander at the origin, solar arrays east and west, instruments to the south. east and north are metres at true scale.",
+		"facts": {
+			"type": "A stationary lander, not a rover",
+			"landing": "26 November 2018, Elysium Planitia",
+			"endOfMission": "15 December 2022",
+			"deckDiameter": "1.56 m",
+			"solarArrays": "two ten-sided arrays, each 2.15 m across; 6.00 m span when open",
+			"deckHeight": "0.83 to 1.08 m above the ground",
+			"arm": "1.8 m robotic arm that lifted the instruments off the deck and set them on the ground",
+			"seismometerPlaced": "19 December 2018, 1.636 m from the lander"
+		},
+		"lander": {
+			"east": 0,
+			"north": 0,
+			"model": "insight/lander.glb"
+		},
+		"instruments": [
+			{
+				"id": "seis",
+				"label": "Seismometer under its Wind and Thermal Shield",
+				"east": 0.2,
+				"north": -2,
+				"confidence": {
+					"position": "approximate"
+				},
+				"source": "https://www.jpl.nasa.gov/news/nasas-insight-places-first-instrument-on-mars/",
+				"note": "Placed on 19 December 2018, 1.636 m from the lander, about as far as the arm could reach (sourced). Which point of the lander that is measured from is not stated, so the modelled spot is approximate. The shield size is approximate."
+			},
+			{
+				"id": "heat-probe",
+				"label": "Heat probe (HP3)",
+				"east": 1.4,
+				"north": -2,
+				"confidence": {
+					"position": "approximate"
+				},
+				"source": "https://www.jpl.nasa.gov/news/nasas-insight-places-first-instrument-on-mars/",
+				"note": "Planned about 1.2 m to the left of the seismometer, at a similar distance from the lander. Size approximate."
+			}
+		],
+		"sources": {
+			"nasaMission": "https://science.nasa.gov/mission/insight/",
+			"pressKit": "https://www.jpl.nasa.gov/news/press_kits/insight/landing/facts",
+			"firstInstrument": "https://www.jpl.nasa.gov/news/nasas-insight-places-first-instrument-on-mars/"
+		}
+	},
 	"frame": "Lander at the origin. east and north are metres at true scale. In Three.js use x = east, y = up, z = -north.",
 	"confidence": {
 		"sourced": "Stated by the cited source.",
@@ -250,6 +315,7 @@
 		{
 			"id": "cover-barnacle-bill",
 			"group": "cover",
+			"cover": true,
 			"label": "Barnacle Bill",
 			"file": "cover/barnacle-bill.glb",
 			"triangles": 4800,
@@ -258,6 +324,7 @@
 		{
 			"id": "cover-yogi",
 			"group": "cover",
+			"cover": true,
 			"label": "Yogi",
 			"file": "cover/yogi.glb",
 			"triangles": 4800,
@@ -266,6 +333,7 @@
 		{
 			"id": "cover-scooby-doo",
 			"group": "cover",
+			"cover": true,
 			"label": "Scooby-Doo",
 			"file": "cover/scooby-doo.glb",
 			"triangles": 4800,
@@ -274,6 +342,7 @@
 		{
 			"id": "cover-wedge",
 			"group": "cover",
+			"cover": true,
 			"label": "Wedge",
 			"file": "cover/wedge.glb",
 			"triangles": 4800,
@@ -282,6 +351,7 @@
 		{
 			"id": "cover-shark",
 			"group": "cover",
+			"cover": true,
 			"label": "Shark",
 			"file": "cover/shark.glb",
 			"triangles": 4800,
@@ -290,6 +360,7 @@
 		{
 			"id": "cover-half-dome",
 			"group": "cover",
+			"cover": true,
 			"label": "Half Dome",
 			"file": "cover/half-dome.glb",
 			"triangles": 4800,
@@ -298,6 +369,7 @@
 		{
 			"id": "cover-moe",
 			"group": "cover",
+			"cover": true,
 			"label": "Moe",
 			"file": "cover/moe.glb",
 			"triangles": 4800,
@@ -306,6 +378,7 @@
 		{
 			"id": "cover-stimpy",
 			"group": "cover",
+			"cover": true,
 			"label": "Stimpy",
 			"file": "cover/stimpy.glb",
 			"triangles": 588,
@@ -314,6 +387,7 @@
 		{
 			"id": "cover-chimp",
 			"group": "cover",
+			"cover": true,
 			"label": "Chimp",
 			"file": "cover/chimp.glb",
 			"triangles": 4800,
@@ -414,6 +488,65 @@
 			"file": "site/ground.glb",
 			"triangles": 8192,
 			"note": "Flat 30 m soil patch, for an optional floor overlay."
+		},
+		{
+			"id": "cover-seis",
+			"group": "cover-insight",
+			"cover": true,
+			"label": "Seismometer (SEIS)",
+			"file": "cover/seis.glb",
+			"triangles": 192,
+			"note": "The copper-coloured seismometer. Stylised to hide a 10 cm cube; not to scale."
+		},
+		{
+			"id": "cover-seis-shield",
+			"group": "cover-insight",
+			"cover": true,
+			"label": "Wind and Thermal Shield",
+			"file": "cover/seis-shield.glb",
+			"triangles": 960,
+			"note": "The dome placed over the seismometer to protect it from wind and temperature swings. Stylised to hide a 10 cm cube; not to scale."
+		},
+		{
+			"id": "cover-heat-probe",
+			"group": "cover-insight",
+			"cover": true,
+			"label": "Heat probe (HP3)",
+			"file": "cover/heat-probe.glb",
+			"triangles": 216,
+			"note": "The heat flow probe and its support structure. Stylised to hide a 10 cm cube; not to scale."
+		},
+		{
+			"id": "insight-lander",
+			"group": "insight",
+			"label": "InSight lander",
+			"file": "insight/lander.glb",
+			"triangles": 944,
+			"note": "Deck 1.56 m across, two 2.15 m solar arrays spanning 6 m, 1.8 m robotic arm (sourced). Detail is schematic."
+		},
+		{
+			"id": "insight-seis-shield",
+			"group": "insight",
+			"label": "Wind and Thermal Shield (true scale)",
+			"file": "insight/seis-shield.glb",
+			"triangles": 720,
+			"note": "The dome over the seismometer. Size approximate."
+		},
+		{
+			"id": "insight-heat-probe",
+			"group": "insight",
+			"label": "Heat probe (true scale)",
+			"file": "insight/heat-probe.glb",
+			"triangles": 184,
+			"note": "Support structure with the tube that held the self-hammering probe. Size approximate."
+		},
+		{
+			"id": "insight-elysium-planitia",
+			"group": "insight",
+			"label": "Whole InSight site",
+			"file": "insight/elysium-planitia.glb",
+			"triangles": 15144,
+			"note": "Lander, both instruments with their tethers, and the soil darkened by the landing rockets, at true scale. Instrument positions are approximate."
 		}
 	]
 }
