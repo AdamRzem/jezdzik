@@ -1,0 +1,15 @@
+# Deployment template; the Python stub does not publish to path cam.
+rtsp: true
+rtspAddress: 127.0.0.1:8554
+rtspTransports: [tcp]
+rtmp: false
+hls: false
+srt: false
+moq: false
+webrtc: true
+webrtcAddress: 127.0.0.1:8889
+webrtcLocalUDPAddress: :8189
+webrtcLocalTCPAddress: ''
+paths:
+  cam:
+    source: publisher
