@@ -1,6 +1,6 @@
 import { Matrix4, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { CAMERA } from './config';
+import { CAMERA, MARKER } from './config';
 import { ItemStore, itemObservation, markerToItem } from './items';
 import {
 	cameraWorld,
@@ -52,7 +52,7 @@ describe('shared camera convention', () => {
 		const m = cameraWorld(moving).invert().multiply(worldMarker).elements;
 		const item = markerToItem(
 			{
-				id: 0,
+				id: MARKER.startId,
 				rotation: [m[0], m[4], m[8], -m[1], -m[5], -m[9], -m[2], -m[6], -m[10]],
 				translation: [m[12], -m[13], -m[14]]
 			},
@@ -61,6 +61,34 @@ describe('shared camera convention', () => {
 		expect(item.x).toBeCloseTo(-0.1);
 		expect(item.z).toBeCloseTo(-1);
 		expect(itemObservation(item, moving).f).toBe(moving.f);
+	});
+	it.each(Array.from({ length: 48 }, (_, offset) => offset))(
+		'recovers object and orientation from marker offset %s',
+		(offset) => {
+			const yaw = 0.37;
+			const angle = yaw + ((offset % 4) * Math.PI) / 2;
+			const normal = new Vector3(-Math.sin(angle), 0, -Math.cos(angle));
+			const world = new Matrix4().makeRotationY(angle + Math.PI);
+			world.setPosition(new Vector3(0.2, 0.05, -1).addScaledVector(normal, 0.05));
+			const m = cameraWorld(pose).invert().multiply(world).elements;
+			const item = markerToItem(
+				{
+					id: MARKER.startId + offset,
+					rotation: [m[0], m[4], m[8], -m[1], -m[5], -m[9], -m[2], -m[6], -m[10]],
+					translation: [m[12], -m[13], -m[14]]
+				},
+				pose
+			)!;
+			expect(item.id).toBe(Math.floor(offset / 4));
+			expect(item.x).toBeCloseTo(0.2);
+			expect(item.z).toBeCloseTo(-1);
+			expect(item.yaw).toBeCloseTo(yaw);
+		}
+	);
+	it.each([-1, 0, 9, 58, 99, 10.5, NaN])('ignores unassigned marker ID %s', (id) => {
+		expect(
+			markerToItem({ id, rotation: [1, 0, 0, 0, 1, 0, 0, 0, 1], translation: [0, 0, 1] }, pose)
+		).toBeNull();
 	});
 	it('stores display smoothing separately and accepts a moved item only after five consistent detections', () => {
 		const items = new ItemStore();

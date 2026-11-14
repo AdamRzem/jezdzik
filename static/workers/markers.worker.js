@@ -18,7 +18,7 @@ async function initialize(settings) {
 		await new Promise((resolve) => {
 			cv.onRuntimeInitialized = resolve;
 		});
-	const dictionary = cv.getPredefinedDictionary(cv.DICT_4X4_50);
+	const dictionary = cv.getPredefinedDictionary(cv[config.dictionary]);
 	if (!cv.aruco_ArucoDetector)
 		throw new Error('OpenCV build is missing ArUco. Run npm run assets.');
 	const parameters = new cv.aruco_DetectorParameters();

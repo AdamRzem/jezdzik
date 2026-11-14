@@ -12,6 +12,9 @@ from camera import Frame, stamp_levels
 from imu import Orientation
 from vo import StubVO
 
+MARKER_START_ID = 10
+MARKER_DICTIONARY = "DICT_4X4_100"
+
 # Known scene geometry is private to the mock camera, never sent as detections.
 ITEMS = (
     {"id": 0, "x": -0.14, "z": -0.85, "yaw": math.pi + 0.2},
@@ -43,9 +46,9 @@ class MockPipeline:
         self.vo = MockTracking(history_frames)
         self.started_ns = None
         self.width, self.height = settings["width"], settings["height"]
-        dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
+        dictionary = cv2.aruco.getPredefinedDictionary(getattr(cv2.aruco, MARKER_DICTIONARY))
         self.markers = {i: cv2.aruco.generateImageMarker(dictionary, i, 128)
-                        for i in range(12)}
+                        for i in range(MARKER_START_ID, MARKER_START_ID + 12)}
         # Rays sampled at 1/4 resolution for the procedural floor only.
         y, x = np.mgrid[0:self.height:4, 0:self.width:4]
         self.rx = (x + 2 - settings["cx"]) / settings["fx"]
@@ -118,7 +121,7 @@ class MockPipeline:
                 polygon, depth = self.project(corners, pose)
                 marker_polygon, _ = self.project(marker_corners, pose)
                 if np.all(depth > .05):
-                    faces.append((float(depth.mean()), polygon, marker_polygon, item["id"]*4+face))
+                    faces.append((float(depth.mean()), polygon, marker_polygon, MARKER_START_ID + item["id"]*4+face))
             angle = item["yaw"]
             right = np.array([-math.cos(angle), 0., math.sin(angle)])
             normal = np.array([-math.sin(angle), 0., -math.cos(angle)])

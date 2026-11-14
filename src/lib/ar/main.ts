@@ -293,7 +293,12 @@ export class Viewer {
 		const d = CAMERA.distortion;
 		worker.postMessage({
 			type: 'init',
-			config: { ...CAMERA, markerSide: MARKER.sideM, distortion: [d.k1, d.k2, d.p1, d.p2, d.k3] }
+			config: {
+				...CAMERA,
+				dictionary: MARKER.dictionary,
+				markerSide: MARKER.sideM,
+				distortion: [d.k1, d.k2, d.p1, d.p2, d.k3]
+			}
 		});
 	}
 	private acceptMarkers(result: MarkerResult) {

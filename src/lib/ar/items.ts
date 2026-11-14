@@ -9,13 +9,14 @@ export function wrapAngle(angle: number) {
 export function markerToItem(detection: MarkerDetection, pose: Pose) {
 	if (
 		!Number.isInteger(detection.id) ||
-		detection.id < 0 ||
-		detection.id >= MARKER.count * 4 ||
+		detection.id < MARKER.startId ||
+		detection.id >= MARKER.startId + MARKER.count * 4 ||
 		detection.rotation.length !== 9 ||
 		detection.translation.length !== 3 ||
 		![...detection.rotation, ...detection.translation].every(Number.isFinite)
 	)
 		return null;
+	const offset = detection.id - MARKER.startId;
 	const r = detection.rotation,
 		t = detection.translation;
 	const marker = new Matrix4().set(
@@ -43,8 +44,8 @@ export function markerToItem(detection: MarkerDetection, pose: Pose) {
 	const center = new Vector3()
 		.setFromMatrixPosition(marker)
 		.addScaledVector(normal, -MARKER.cubeM / 2);
-	const yaw = wrapAngle(Math.atan2(-normal.x, -normal.z) - ((detection.id % 4) * Math.PI) / 2);
-	return { id: Math.floor(detection.id / 4), x: center.x, z: center.z, yaw };
+	const yaw = wrapAngle(Math.atan2(-normal.x, -normal.z) - ((offset % 4) * Math.PI) / 2);
+	return { id: Math.floor(offset / 4), x: center.x, z: center.z, yaw };
 }
 
 export function itemObservation(
