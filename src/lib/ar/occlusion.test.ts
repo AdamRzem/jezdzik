@@ -1,7 +1,9 @@
+import { Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { CAMERA } from './config';
 import { fitFloor, maskDepth, OcclusionProcessor } from './occlusion';
 import { QualityController } from './quality';
+import { cameraWorld, floorDepth, floorPlane } from './rectify';
 
 describe('occlusion', () => {
 	it('recovers inverse-depth scale and shift despite foreground outliers', () => {
@@ -23,6 +25,37 @@ describe('occlusion', () => {
 		expect(maskDepth(1, 1)).toBe(CAMERA.far);
 		expect(maskDepth(0.95, 2, 1)).toBe(CAMERA.far);
 		expect(maskDepth(0.7, 2, 1)).toBe(0.7);
+	});
+	it('never lets the carrier of a recognised marker hide its own model', () => {
+		// A phone showing a small marker stands 0.35 m away, but its marker reads as 0.8 m.
+		const pose = { e: 1, f: 1, x: 0, z: 0, yaw: 0, pitch: 0, roll: 0, q: 2 as const },
+			plane = floorPlane(pose),
+			width = 320,
+			height = 180,
+			data = new Float32Array(width * height);
+		const centre = new Vector3(0, 0.05, -0.8).applyMatrix4(cameraWorld(pose).invert());
+		const u = CAMERA.cx + (CAMERA.fx * centre.x) / -centre.z,
+			v = CAMERA.cy - (CAMERA.fy * centre.y) / -centre.z;
+		const pixel = (pu: number, pv: number) =>
+			Math.round((pv / CAMERA.height) * (height - 1)) * width +
+			Math.round((pu / CAMERA.width) * (width - 1));
+		for (let y = 0; y < height; y++)
+			for (let x = 0; x < width; x++) {
+				const pu = ((x + 0.5) / width) * CAMERA.width,
+					pv = ((y + 0.5) / height) * CAMERA.height;
+				let z = Math.min(50, floorDepth(pu, pv, plane));
+				if (Math.abs(pu - u) < 60 && Math.abs(pv - v) < 90) z = 0.35; // the phone
+				if (pu > u + 200 && pu < u + 260 && Math.abs(pv - v) < 60) z = 0.2; // a hand in front
+				data[y * width + x] = 1 / z;
+			}
+		const frame = new OcclusionProcessor().process(
+			{ type: 'depth', e: 1, f: 1, width, height, data, ms: 0 },
+			pose,
+			[{ id: 0, x: 0, z: -0.8, yaw: 0, lastSeen: 0, detections: 9 }]
+		)!;
+		expect(frame.data[pixel(u, v)]).toBe(CAMERA.far);
+		expect(frame.data[pixel(u + 40, v - 60)]).toBe(CAMERA.far);
+		expect(frame.data[pixel(u + 230, v)]).toBeCloseTo(0.2, 2);
 	});
 	it('rejects depth from a different frame or epoch', () => {
 		const processor = new OcclusionProcessor(),

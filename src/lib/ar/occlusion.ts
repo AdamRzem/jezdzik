@@ -62,6 +62,15 @@ export function maskDepth(z: number, zFloor: number, itemNear?: number) {
 	return z;
 }
 
+const MODEL_RADIUS = 0.17;
+const MODEL_HEIGHT = 0.2;
+
+/** The middle value of a few depth readings, or undefined when there are none. */
+export function median(values: number[]) {
+	const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+	return sorted.length ? sorted[Math.floor(sorted.length / 2)] : undefined;
+}
+
 function itemBoxes(items: TrackedItem[], pose: Pose) {
 	const inverse = cameraWorld(pose).invert();
 	return items
@@ -69,9 +78,10 @@ function itemBoxes(items: TrackedItem[], pose: Pose) {
 			const center = new Vector3(item.x, 0.05, item.z).applyMatrix4(inverse);
 			if (-center.z <= CAMERA.near) return null;
 			const points: { u: number; v: number }[] = [];
-			for (const dx of [-0.071, 0.071])
-				for (const y of [0, 0.1])
-					for (const dz of [-0.071, 0.071]) {
+			// The area the model can cover, which is larger than the cube that carries the marker.
+			for (const dx of [-MODEL_RADIUS, MODEL_RADIUS])
+				for (const y of [0, MODEL_HEIGHT])
+					for (const dz of [-MODEL_RADIUS, MODEL_RADIUS]) {
 						const p = new Vector3(item.x + dx, y, item.z + dz).applyMatrix4(inverse);
 						if (-p.z <= CAMERA.near) return null;
 						points.push({
@@ -88,7 +98,10 @@ function itemBoxes(items: TrackedItem[], pose: Pose) {
 				maxU: maxU + (maxU - minU) * 0.05,
 				minV: minV - (maxV - minV) * 0.05,
 				maxV: maxV + (maxV - minV) * 0.05,
-				near: -center.z - 0.071
+				near: -center.z - 0.071,
+				// Where the marker's carrier appears in the picture.
+				u: CAMERA.cx + (CAMERA.fx * center.x) / -center.z,
+				v: CAMERA.cy - (CAMERA.fy * center.y) / -center.z
 			};
 		})
 		.filter((box) => box !== null);
@@ -130,6 +143,20 @@ export class OcclusionProcessor {
 		const fit = { ...this.previous, ratio: fitted?.ratio ?? 0, inliers: fitted?.inliers ?? [] };
 		const metric = new Float32Array(width * height),
 			boxes = itemBoxes(items, pose);
+		// Whatever carries a recognised marker (a cube, a phone, a sheet of paper) must not
+		// hide its own model. The marker's distance is only right for an 8 cm marker, so read
+		// the carrier's real depth from the depth map at the marker's place in the picture.
+		for (const box of boxes) {
+			const raw = rectifiedToRaw(box.u, box.v),
+				readings: number[] = [];
+			for (const dv of [-12, 0, 12])
+				for (const du of [-12, 0, 12]) {
+					const d = sampleDepth(raw.u + du, raw.v + dv);
+					if (Number.isFinite(d)) readings.push(1 / Math.max(fit.a * d + fit.b, 0.02));
+				}
+			const carrier = median(readings);
+			if (carrier !== undefined) box.near = Math.min(box.near, carrier);
+		}
 		for (let y = 0; y < height; y++)
 			for (let x = 0; x < width; x++) {
 				const i = y * width + x,
