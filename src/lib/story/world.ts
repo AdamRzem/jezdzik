@@ -18,6 +18,7 @@ export const world: WorldEntry[] = [
 	{ id: 'barnacle-bill', label: 'Barnacle Bill', item: 0, kind: 'object' },
 	{ id: 'yogi', label: 'Yogi', item: 1, kind: 'object' },
 	{ id: 'seis', label: 'Seismometer', item: 9, kind: 'object', the: true },
+	{ id: 'seis-shield', label: 'Wind and thermal shield', item: 10, kind: 'object', the: true },
 	{ id: 'heat-probe', label: 'Heat probe', item: 11, kind: 'object', the: true },
 	{ id: 'A', label: 'Point A', item: 12, kind: 'point' },
 	{ id: 'B', label: 'Point B', item: 13, kind: 'point' },

@@ -135,7 +135,13 @@
 					<div class="viewer-specs">1280 × 720 <span>·</span> 30 FPS</div>
 				</div>
 				<div class="video-stage" bind:this={stage}>
-					<video bind:this={video} muted autoplay playsinline aria-label="Raw rover camera stream"
+					<video
+						bind:this={video}
+						class:camera-flipped={status.mode === 'live'}
+						muted
+						autoplay
+						playsinline
+						aria-label="Raw rover camera stream"
 					></video>
 					<canvas
 						bind:this={canvas}

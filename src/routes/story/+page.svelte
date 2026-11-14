@@ -4,14 +4,17 @@
 	//   /story?mode=live  the real rover
 	// The viewer reports tracked items; this page turns them into story events.
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { Viewer } from '#lib/ar/main.js';
 	import type { ViewerStatus } from '#lib/ar/types.js';
 	import { StoryEngine } from '../../lib/story/engine.svelte';
-	import { steps } from '../../lib/story/sojourner/story';
+	import { storyFor } from '../../lib/story/missions';
 	import { idOfItem, itemOf } from '../../lib/story/world';
 	import Hud from '../../lib/story/Hud.svelte';
 
-	const engine = new StoryEngine(steps);
+	const story = $derived(storyFor(page.url.searchParams.get('mission')));
+	const engine = $derived(new StoryEngine(story.steps));
 	const FRESH_MS = 1500; // an item counts as "in view" if seen this recently
 
 	let canvas: HTMLCanvasElement;
@@ -20,6 +23,13 @@
 	let fatal = $state('');
 	let live = $state(false);
 	let waiting = $state(false);
+
+	function switchMode() {
+		const query = new SvelteURLSearchParams(location.search);
+		if (live) query.delete('mode');
+		else query.set('mode', 'live');
+		location.search = query.toString();
+	}
 
 	// Simulation only: W A S D steer the simulated rover.
 	const held: Record<string, boolean> = {};
@@ -73,13 +83,14 @@
 <svelte:window onkeydown={(e) => steer(e, true)} onkeyup={(e) => steer(e, false)} />
 
 <svelte:head>
-	<title>Sojourner: the story</title>
+	<title>{story.name}: the story</title>
 </svelte:head>
 
 <div class="relative h-screen w-screen overflow-hidden bg-black">
 	<!-- The video stays in the page under the canvas; hiding it can stop frame callbacks. -->
 	<video
 		bind:this={video}
+		class:camera-flipped={live}
 		muted
 		autoplay
 		playsinline
@@ -100,19 +111,19 @@
 		</p>
 	{/if}
 
-	<Hud {engine} />
-
-	<button
-		class="absolute top-16 left-4 rounded bg-black/60 px-2 py-1 font-mono text-xs text-amber-100/70 hover:text-amber-100"
-		onclick={() => (location.search = live ? '' : '?mode=live')}
-	>
-		{live ? 'LIVE ROVER · switch to simulation' : 'SIMULATION · connect the rover'}
-	</button>
-	{#if !live}
-		<p
-			class="absolute top-24 left-4 rounded bg-black/60 px-2 py-1 font-mono text-xs text-amber-100/70"
-		>
-			W A S D: drive · G: grip
-		</p>
-	{/if}
+	<Hud {engine}>
+		{#snippet controls()}
+			<div
+				class="pointer-events-auto mx-4 flex shrink-0 flex-col items-start gap-2 font-mono text-xs text-amber-100/70"
+			>
+				<button
+					class="rounded bg-black/60 px-2 py-1 text-left hover:text-amber-100"
+					onclick={switchMode}
+				>
+					{live ? 'LIVE ROVER · switch to simulation' : 'SIMULATION · connect the rover'}
+				</button>
+				{#if !live}<p class="rounded bg-black/60 px-2 py-1">W A S D: drive · G: grip</p>{/if}
+			</div>
+		{/snippet}
+	</Hud>
 </div>

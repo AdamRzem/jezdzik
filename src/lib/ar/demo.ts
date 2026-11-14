@@ -16,6 +16,7 @@ export const DEMO_ITEMS = [
 export const COURSE_ITEMS = [
 	...DEMO_ITEMS,
 	{ id: 9, x: 0.95, z: -3.4, yaw: 0.2 }, // seismometer
+	{ id: 10, x: 1.35, z: -2.9, yaw: 0 }, // wind and thermal shield
 	{ id: 11, x: 0.9, z: -2.7, yaw: 0.1 }, // heat probe
 	{ id: 12, x: 0.5, z: -0.7, yaw: 0 }, // point A
 	{ id: 13, x: -0.7, z: -1.7, yaw: 0 }, // point B

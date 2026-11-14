@@ -20,6 +20,7 @@ export const MARKER = {
 	cubeM: 0.1,
 	dictionary: 'DICT_4X4_100',
 	startId: 10,
+	lostAfterMs: 500,
 	count: 18
 } as const;
 export const DEPTH = {

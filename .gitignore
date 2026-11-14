@@ -32,3 +32,4 @@ storybook-static
 __pycache__/
 .venv/
 *.pyc
+/caddy-root.crt

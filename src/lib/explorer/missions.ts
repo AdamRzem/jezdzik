@@ -11,7 +11,7 @@ export type Mission = {
 	source: string;
 	location: { type: 'surface'; lat: number; lon: number } | { type: 'orbit' | 'trajectory' };
 	play?: '/play';
-	story?: '/story';
+	story?: '/story' | '/story?mission=insight';
 };
 const nasa = (slug: string) => `https://science.nasa.gov/mission/${slug}/`;
 function surface(
@@ -117,18 +117,21 @@ export const missions: Mission[] = [
 		'Phoenix reached into the northern soil and confirmed water ice just beneath the surface.',
 		'The lander fell silent as the northern winter approached.'
 	),
-	surface(
-		'insight',
-		'InSight',
-		'Mars',
-		2018,
-		'Lander',
-		'Elysium Planitia',
-		4.5024,
-		135.6234,
-		'Listening rather than roaming, InSight used marsquakes to reveal the planet’s interior.',
-		'Dust-covered solar panels ended its mission in 2022. It remains at its landing site.'
-	),
+	{
+		...surface(
+			'insight',
+			'InSight',
+			'Mars',
+			2018,
+			'Lander',
+			'Elysium Planitia',
+			4.5024,
+			135.6234,
+			'Listening rather than roaming, InSight used marsquakes to reveal the planet’s interior.',
+			'Dust-covered solar panels ended its mission in 2022. It remains at its landing site.'
+		),
+		story: '/story?mission=insight'
+	},
 	surface(
 		'mars-2020-perseverance/ingenuity-mars-helicopter',
 		'Ingenuity',
