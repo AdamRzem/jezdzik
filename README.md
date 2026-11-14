@@ -69,11 +69,45 @@ Procedural low-poly rocks and soft shadows are bundled. Set an item's `model` UR
 in `src/lib/ar/config.ts` to use your own local GLB with the plan's size/origin
 convention; a missing GLB keeps the bundled rock.
 
-The marker worker uses full-resolution raw frames and `DICT_4X4_50` with 80 mm
+The marker worker uses full-resolution raw frames and `DICT_4X4_100` with 80 mm
 markers. Poses are solved with distortion-aware IPPE square PnP and converted
 using the capture frame's pose. Display smoothing never feeds observations sent
 back to the Pi. Occlusion rescales relative inverse depth against the known floor;
 its cube mask preserves real foreground nearer than the replacement item.
+
+Detected cubes automatically display their assigned GLB from
+`static/assets/models/cover`, at its authored metre scale with the origin centered
+on the floor. Internal object IDs remain 0–11.
+
+| Marker IDs | Cover         |
+| ---------- | ------------- |
+| 10–13      | Barnacle Bill |
+| 14–17      | Yogi          |
+| 18–21      | Scooby-Doo    |
+| 22–25      | Wedge         |
+| 26–29      | Shark         |
+| 30–33      | Half Dome     |
+| 34–37      | Moe           |
+| 38–41      | Stimpy        |
+| 42–45      | Chimp         |
+| 46–49      | SEIS          |
+| 50–53      | SEIS shield   |
+| 54–57      | Heat probe    |
+
+Place the four markers upright and centered on a 10 cm cube's vertical faces.
+For object `i`, the IDs are `10 + 4i + side`, where side is 0–3. In the
+Y-up world convention, face `side` has outward normal
+`(-sin(yaw + side × π/2), 0, -cos(yaw + side × π/2))`.
+IDs outside 10–57 are ignored. Update physical markers to this allocation and
+dictionary; the former IDs starting at 0 are retired.
+
+To debug detected markers that fail a guard, open `/play?mode=live&debug=aruco`
+and the browser's developer console. Each rejection or deferred update logs
+`[ArUco guard]` with the marker ID, epoch, frame, reason, and relevant values.
+Reasons cover pose-solving failures, unmapped IDs, malformed poses, the upright
+angle check, stale/unmatched worker results, duplicate cube faces, and position
+jumps waiting for confirmation. Logging is off without `debug=aruco`; markers
+that the detector does not recognize produce no guard log.
 
 If assets or WebGPU are unavailable, marker/depth status explains the unavailable
 feature. Video and matched overlays continue. Automatic depth quality measures ten

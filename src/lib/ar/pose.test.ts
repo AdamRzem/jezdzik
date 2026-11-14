@@ -1,9 +1,71 @@
-import { describe, expect, it } from 'vitest';
-import { isPose, PoseBuffer } from './pose';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { isPose, PoseBuffer, PoseClient } from './pose';
 import { FrameSync } from './sync';
 import type { Pose } from './types';
 
 const pose = (f = 0, e = 1): Pose => ({ e, f, x: 0, z: 0, yaw: 0, pitch: 0, roll: 0, q: 2 });
+describe('real camera pose without an IMU gate', () => {
+	afterEach(() => vi.unstubAllGlobals());
+	const connect = () => {
+		vi.stubGlobal('location', { href: 'http://localhost/play' });
+		vi.stubGlobal('localStorage', { getItem: () => null });
+		const socket = { onmessage: vi.fn<(event: { data: string }) => void>(), close: vi.fn() };
+		const worker = {
+			onmessage: vi.fn<(event: { data: unknown }) => void>(),
+			postMessage: vi.fn(),
+			terminate: vi.fn()
+		};
+		vi.stubGlobal(
+			'WebSocket',
+			class {
+				constructor() {
+					return socket;
+				}
+			}
+		);
+		vi.stubGlobal(
+			'Worker',
+			class {
+				constructor() {
+					return worker;
+				}
+			}
+		);
+		const client = new PoseClient(vi.fn(), vi.fn());
+		client.start();
+		socket.onmessage({
+			data: JSON.stringify({ type: 'hello', v: 2, mode: 'real', e: 42, imu: {} })
+		});
+		return { client, worker };
+	};
+	it('provides frame poses before calibration and after history is cleared', () => {
+		const { client, worker } = connect();
+		const first = client.framePose(100);
+		expect(first).toEqual({ e: 42, f: 0, x: 0, z: 0, yaw: 0, pitch: 0, roll: 0, q: 0 });
+		worker.onmessage({ data: { e: 42, history: [], clear: true } });
+		expect(client.framePose(200)).toEqual({ ...first, f: 1 });
+		client.stop();
+	});
+	it('uses fresh attitude, falls back for unavailable timestamps, and resumes when samples return', () => {
+		const { client, worker } = connect();
+		const q = [Math.cos(0.2), 0, Math.sin(0.2), 0];
+		worker.onmessage({
+			data: {
+				e: 42,
+				history: [
+					{ time: 100, q },
+					{ time: 120, q }
+				]
+			}
+		});
+		expect(client.framePose(110).yaw).toBeCloseTo(0.4);
+		expect(client.framePose(90).yaw).toBe(0);
+		expect(client.framePose(171).yaw).toBe(0);
+		worker.onmessage({ data: { e: 42, history: [{ time: 180, q }] } });
+		expect(client.framePose(180).yaw).toBeCloseTo(0.4);
+		client.stop();
+	});
+});
 describe('pose protocol', () => {
 	it('validates wire data without coercing strings or accepting non-finite coordinates', () => {
 		expect(isPose(pose())).toBe(true);

@@ -23,7 +23,8 @@ MediaMTX needs camera permissions. Configure camera resolution/FPS in
 Open `/play?mode=live`. Keep the rover still during browser calibration (default
 three seconds) and after reset/reconnect. Every viewer computes its own attitude.
 Reset is shared through `/ws`; it clears browser tracking and restarts calibration.
-Missing/stale IMU data shows video without overlays. Sensor failures stop Python.
+Missing/stale IMU data uses neutral rover attitude so marker detection and overlays
+continue with the configured camera mounting. Sensor failures stop Python.
 
 ## Timing and protocol
 

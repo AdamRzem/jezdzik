@@ -15,64 +15,68 @@ const browser = await chromium.launch({
 const page = await browser.newPage();
 try {
 	await page.goto(process.env.AR_BASE_URL || 'http://127.0.0.1:5173/bench');
-	const marker = await page.evaluate(async () => {
-		const lens = {
-			fx: 1653.8,
-			fy: 1662.4,
-			cx: 640,
-			cy: 360,
-			markerSide: 0.08,
-			distortion: [0, 0, 0, 0, 0]
-		};
-		const worker = new Worker('/workers/markers.worker.js');
-		const receive = (target) =>
-			new Promise((resolve, reject) => {
-				const timeout = setTimeout(() => reject(new Error('Marker worker timed out')), 30000);
-				target.onmessage = ({ data }) => {
-					clearTimeout(timeout);
-					data.type === 'error' ? reject(new Error(data.message)) : resolve(data);
-				};
-				target.onerror = (error) => {
-					clearTimeout(timeout);
-					reject(new Error(error.message));
-				};
-			});
-		const ready = receive(worker);
-		worker.postMessage({ type: 'init', config: lens });
-		await ready;
-		const url = new URL('/vendor/opencv.js', location.href).href;
-		const code = `self.onmessage = async () => { try {
+	for (const markerId of [10, 57]) {
+		const marker = await page.evaluate(async (markerId) => {
+			const lens = {
+				fx: 1653.8,
+				fy: 1662.4,
+				cx: 640,
+				cy: 360,
+				markerSide: 0.08,
+				dictionary: 'DICT_4X4_100',
+				distortion: [0, 0, 0, 0, 0]
+			};
+			const worker = new Worker('/workers/markers.worker.js');
+			const receive = (target) =>
+				new Promise((resolve, reject) => {
+					const timeout = setTimeout(() => reject(new Error('Marker worker timed out')), 30000);
+					target.onmessage = ({ data }) => {
+						clearTimeout(timeout);
+						if (data.type === 'error') reject(new Error(data.message));
+						else resolve(data);
+					};
+					target.onerror = (error) => {
+						clearTimeout(timeout);
+						reject(new Error(error.message));
+					};
+				});
+			const ready = receive(worker);
+			worker.postMessage({ type: 'init', config: lens });
+			await ready;
+			const url = new URL('/vendor/opencv.js', location.href).href;
+			const code = `self.onmessage = async () => { try {
  importScripts(${JSON.stringify(url)}); const cv = self.cv;
  if(!cv.Mat) await new Promise(resolve=>{cv.onRuntimeInitialized=resolve;});
- const dictionary=cv.getPredefinedDictionary(cv.DICT_4X4_50), marker=new cv.Mat();
- cv.generateImageMarker(dictionary, 0, 132, marker, 1);
+ const dictionary=cv.getPredefinedDictionary(cv.DICT_4X4_100), marker=new cv.Mat();
+ cv.generateImageMarker(dictionary, ${markerId}, 132, marker, 1);
  const canvas=new OffscreenCanvas(1280,720), ctx=canvas.getContext('2d');
  ctx.fillStyle='white';ctx.fillRect(0,0,1280,720);
  for(let y=0;y<132;y++)for(let x=0;x<132;x++){ctx.fillStyle=marker.data[y*132+x]?'white':'black';ctx.fillRect(574+x,294+y,1,1);}
  const bitmap=canvas.transferToImageBitmap(); marker.delete();dictionary.delete();
  self.postMessage({bitmap},[bitmap]);
  }catch(error){self.postMessage({type:'error',message:String(error)});} };`;
-		const blob = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
-		const generator = new Worker(blob);
-		try {
-			const generated = receive(generator);
-			generator.postMessage({});
-			const { bitmap } = await generated;
-			const detected = receive(worker);
-			worker.postMessage({ type: 'frame', bitmap, e: 42, f: 7 }, [bitmap]);
-			return await detected;
-		} finally {
-			worker.terminate();
-			generator.terminate();
-			URL.revokeObjectURL(blob);
-		}
-	});
-	assert.equal(marker.e, 42);
-	assert.equal(marker.f, 7);
-	assert.equal(marker.detections.length, 1);
-	assert.equal(marker.detections[0].id, 0);
-	assert.ok(Math.abs(marker.detections[0].translation[2] - 1) < 0.05);
-	console.log('OpenCV worker passed: ArUco 4×4_50 detection, solvePnP and epoch/frame tags.');
+			const blob = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+			const generator = new Worker(blob);
+			try {
+				const generated = receive(generator);
+				generator.postMessage({});
+				const { bitmap } = await generated;
+				const detected = receive(worker);
+				worker.postMessage({ type: 'frame', bitmap, e: 42, f: 7 }, [bitmap]);
+				return await detected;
+			} finally {
+				worker.terminate();
+				generator.terminate();
+				URL.revokeObjectURL(blob);
+			}
+		}, markerId);
+		assert.equal(marker.e, 42);
+		assert.equal(marker.f, 7);
+		assert.equal(marker.detections.length, 1);
+		assert.equal(marker.detections[0].id, markerId);
+		assert.ok(Math.abs(marker.detections[0].translation[2] - 1) < 0.05);
+	}
+	console.log('OpenCV worker passed: ArUco 4×4_100 detection, solvePnP and epoch/frame tags.');
 	const depth = await page.evaluate(async () => {
 		if (!('gpu' in navigator) || !(await navigator.gpu.requestAdapter()))
 			return { skipped: 'No WebGPU adapter available' };

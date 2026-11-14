@@ -42,12 +42,12 @@ Because the rover does not track its own position, beacons and labels appear onl
 
 ## 4. Markers
 
-Dictionary `DICT_4X4_50`, split into two ranges:
+Dictionary `DICT_4X4_100`. Object assignments are implemented; point markers are reserved for future story navigation:
 
 | IDs | Used for | Size | Placement |
 |---|---|---|---|
-| 0 to 31 | Objects (rocks, instruments). Object `i` uses IDs `4i` to `4i+3`, one per side face | 8 cm | On the four sides of each 10 cm cube |
-| 32 to 49 | Points (A, B, C, drop zones, start) | 15 to 20 cm | Upright on a stand or folded card at the point |
+| 10 to 57 | Objects (nine rocks, then SEIS, SEIS shield, heat probe). Object `i` uses IDs `10+4i` to `13+4i`, one per side face | 8 cm | On the four sides of each 10 cm cube |
+| 58 to 99 | Points (A, B, C, drop zones, start) | 15 to 20 cm | Upright on a stand or folded card at the point |
 
 A carried object's marker may be hidden by the gripper. While the engine is in the "carrying" stage, the object's model is drawn at a fixed spot in front of the camera instead of on its marker.
 

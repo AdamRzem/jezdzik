@@ -15,7 +15,13 @@ export const CAMERA = {
 	distortion: { k1: 0, k2: 0, p1: 0, p2: 0, k3: 0 }
 } as const;
 export const STAMP = { blocks: 26, size: 16, white: 235, black: 16 } as const;
-export const MARKER = { sideM: 0.08, cubeM: 0.1, dictionary: 'DICT_4X4_50', count: 12 };
+export const MARKER = {
+	sideM: 0.08,
+	cubeM: 0.1,
+	dictionary: 'DICT_4X4_100',
+	startId: 10,
+	count: 12
+} as const;
 export const DEPTH = {
 	model: '/models/depth-anything-v2-small-fp16.onnx',
 	A: { width: 518, height: 294, maxMs: 100 },
@@ -42,8 +48,7 @@ const COVER_ROCKS = [
 	['shark', 'Shark'],
 	['wedge', 'Wedge']
 ] as const;
-export const ITEM_TYPES = Array.from({ length: MARKER.count }, (_, id) => {
-	const [file, name] = COVER_ROCKS[id % COVER_ROCKS.length];
+export const ITEM_TYPES = COVER_MODELS.map(([file, name], id) => {
 	return {
 		id,
 		name,

@@ -43,7 +43,7 @@ Out of scope for this plan: driving the rover (motor control, remote control UI)
 | Position | Visual odometry on the near floor, run on the Pi on raw frames | No encoders or other hardware available; an IMU alone drifts by metres in seconds |
 | Video-to-pose sync | Frame number with a checksum, stamped into the video pixels | Exact; 1° of error is 29 px with this lens, so timing by clock is not good enough |
 | Rendering | Three.js; the video frame and the overlay are drawn in one WebGL canvas | Guarantees both come from the same frame and share one lens model |
-| Item recognition | ArUco markers (`DICT_4X4_50`), 3D printed, on each side face | Gives identity and accurate pose from one camera |
+| Item recognition | ArUco markers (`DICT_4X4_100`), 3D printed, on each side face | Gives identity and accurate pose from one camera |
 | Marker detection | In the browser, in a Web Worker, with OpenCV.js | Full-resolution frames, plenty of compute, no load on the Pi |
 | Occlusion | Depth Anything V2 Small in the browser, rescaled against the known floor | Objects are floor-only, so the floor gives metric scale every frame |
 | Landmark map and drift correction | On the Pi | One authority, so several viewers cannot disagree or double-correct |
@@ -470,7 +470,7 @@ Depends on: Phase 3 for rotation; Phase 4 for objects that stay fixed while driv
 
 Marker specification:
 
-- Dictionary `DICT_4X4_50`. Marker side 80 mm including the black border, so each cell is 13.33 mm. Light margin 10 mm on every side, giving a 100 × 100 mm tile.
+- Dictionary `DICT_4X4_100`. Marker side 80 mm including the black border, so each cell is 13.33 mm. Light margin 10 mm on every side, giving a 100 × 100 mm tile.
 - Tile: 1.6 mm base in light filament, black cells raised 0.6 mm, tops coloured with a permanent marker, printed face up. Matte surface.
 - One marker centred on each of the four side faces. Item `i` (0 to 11) uses IDs `4i`, `4i+1`, `4i+2`, `4i+3` for faces at 0°, 90°, 180° and 270° going counter-clockwise seen from above.
 
@@ -478,7 +478,7 @@ Tasks:
 
 - [ ] `make_marker_stl.py` (run on a PC with OpenCV ≥ 4.7): for each ID, take the 6 × 6 cell pattern from `cv2.aruco.generateImageMarker` and write the tile STL.
 - [ ] Print, colour and mount the markers; check each with a detection script before going further.
-- [ ] `markers.worker.js`: receive the captured raw frame with its `e` and `f`; grey-scale; detect markers; for each, `solvePnP` with `SOLVEPNP_IPPE_SQUARE`, the calibrated distortion coefficients, and object points (−L/2, L/2, 0), (L/2, L/2, 0), (L/2, −L/2, 0), (−L/2, −L/2, 0), L = 0.080 m; return ID, rotation and translation tagged with `e` and `f`. Confirm the OpenCV.js build exposes the ArUco detector; if not, use js-aruco2 with the `DICT_4X4_50` codes added.
+- [ ] `markers.worker.js`: receive the captured raw frame with its `e` and `f`; grey-scale; detect markers; for each, `solvePnP` with `SOLVEPNP_IPPE_SQUARE`, the calibrated distortion coefficients, and object points (−L/2, L/2, 0), (L/2, L/2, 0), (L/2, −L/2, 0), (−L/2, −L/2, 0), L = 0.080 m; return ID, rotation and translation tagged with `e` and `f`. Confirm the OpenCV.js build exposes the ArUco detector; if not, use js-aruco2 with the `DICT_4X4_100` codes added.
 - [ ] `items.ts`: drop results whose `e` is not the current epoch. Convert each detection to world coordinates using the pose of frame `f`, not the current frame (section 9.4). Reject it if the marker's up axis is more than 15° from world up (wrong solution of the planar ambiguity). Item centre is 0.05 m behind the marker face; set the item's y to 0; yaw from the marker normal plus the face offset.
 - [ ] Display smoothing: move the displayed position 30% toward each new measurement within 2 m, 10% beyond. Ignore a jump of more than 0.3 m unless it persists for 5 detections (the item was moved). This smoothed position is for display only and is never used as a drift reference (Phase 7).
 - [ ] Models: one `.glb` per item type in `config.ts`, origin at the centre of the base, ≤ 0.12 m tall, ≥ 0.16 m across at every height up to 0.105 m, ≤ 5 000 triangles. Hemisphere light plus one directional light from above. Soft round shadow texture of radius 0.11 m at y = 0.001.

@@ -48,6 +48,7 @@ export class Viewer {
 	private marker: Worker | null = null;
 	private markerReady = false;
 	private markerRequest: Pose | null = null;
+	private markerDebug = new URLSearchParams(location.search).get('debug') === 'aruco';
 	private markerLoadingTimer: ReturnType<typeof setTimeout> | undefined;
 	private depth: DepthWorker | null = null;
 	private depthReady = false;
@@ -222,14 +223,14 @@ export class Viewer {
 			let frame: number | null;
 			if (real) {
 				pose = this.socket!.framePose(presentationTime);
-				frame = pose?.f ?? null;
-				if (pose) this.poses.push(pose);
+				frame = pose.f;
+				this.poses.push(pose);
 			} else {
 				this.readbackContext.drawImage(bitmap, 0, 0, 416, 16, 0, 0, 416, 16);
 				frame = decodeStamp(this.readbackContext.getImageData(0, 0, 416, 16));
 				pose = frame === null ? undefined : this.poses.get(frame, epoch);
 			}
-			const decision = real ? (pose ? 'matched' : 'video-only') : this.sync.decide(frame, pose);
+			const decision = real ? 'matched' : this.sync.decide(frame, pose);
 			this.state.unknown = this.sync.unknown;
 			if (decision === 'hold' || decision === 'repeat') return;
 			if (decision === 'video-only') {
@@ -294,25 +295,58 @@ export class Viewer {
 		const d = CAMERA.distortion;
 		worker.postMessage({
 			type: 'init',
-			config: { ...CAMERA, markerSide: MARKER.sideM, distortion: [d.k1, d.k2, d.p1, d.p2, d.k3] }
+			config: {
+				...CAMERA,
+				debug: this.markerDebug,
+				dictionary: MARKER.dictionary,
+				markerSide: MARKER.sideM,
+				distortion: [d.k1, d.k2, d.p1, d.p2, d.k3]
+			}
 		});
 	}
 	private acceptMarkers(result: MarkerResult) {
 		const pose = this.markerRequest;
+		const logGuard = (markerId: number, reason: string, details: Record<string, unknown> = {}) => {
+			if (this.markerDebug)
+				console.info('[ArUco guard]', {
+					markerId,
+					reason,
+					epoch: result.e,
+					frame: result.f,
+					...details
+				});
+		};
 		// An old worker result must not release a newer epoch's outstanding request.
-		if (!pose || result.e !== pose.e || result.f !== pose.f) return;
+		if (!pose || result.e !== pose.e || result.f !== pose.f) {
+			for (const detection of result.detections)
+				logGuard(detection.id, 'unmatched-worker-result', {
+					expectedEpoch: pose?.e,
+					expectedFrame: pose?.f
+				});
+			return;
+		}
 		this.markerRequest = null;
-		if (result.e !== this.poses.epoch) return;
+		if (result.e !== this.poses.epoch) {
+			for (const detection of result.detections)
+				logGuard(detection.id, 'stale-epoch', { currentEpoch: this.poses.epoch });
+			return;
+		}
 		const seen = new Set<number>();
 		for (const detection of result.detections) {
-			const item = markerToItem(detection, pose);
-			if (!item || seen.has(item.id)) continue;
+			const onGuard = (reason: string, details: Record<string, unknown>) =>
+				logGuard(detection.id, reason, details);
+			const item = markerToItem(detection, pose, onGuard);
+			if (!item) continue;
+			if (seen.has(item.id)) {
+				logGuard(detection.id, 'duplicate-cube-face', { itemId: item.id });
+				continue;
+			}
 			seen.add(item.id);
 			const distance = Math.hypot(item.x - pose.x, item.z - pose.z);
 			if (this.socket?.mode === 'mock') {
 				if (!this.anchors.has(item.id)) this.anchors.set(item.id, { ...item });
 			}
-			this.items.update(this.anchors.get(item.id) ?? item, distance);
+			this.items.update(this.anchors.get(item.id) ?? item, distance, performance.now(), onGuard);
 			// Observations remain browser-local.
 		}
 	}

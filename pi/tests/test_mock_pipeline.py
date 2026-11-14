@@ -9,7 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from camera import Frame, stamp_levels
 from imu import Orientation, StubIMU
-from mock_pipeline import ITEMS, MockPipeline, MockTracking
+from mock_pipeline import ITEMS, MARKER_START_ID, MARKER_DICTIONARY, MockPipeline, MockTracking
 from pose_server import PoseServer
 from video import VideoPublisher
 
@@ -71,7 +71,7 @@ class MockCameraTests(unittest.TestCase):
         np, cv = p.np, p.cv
         capture = p.capture(Frame(7, 1_000_000_000, 0))
         image = np.frombuffer(capture.rgb, dtype=np.uint8).reshape(720, 1280, 3)
-        dictionary = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_50)
+        dictionary = cv.aruco.getPredefinedDictionary(getattr(cv.aruco, MARKER_DICTIONARY))
         corners, ids, _ = cv.aruco.ArucoDetector(dictionary).detectMarkers(image)
         self.assertIsNotNone(ids)
         self.assertGreaterEqual(len(ids), 2)
@@ -90,7 +90,7 @@ class MockCameraTests(unittest.TestCase):
             up = optical_to_world @ r[:,1]
             self.assertGreater(up[1], math.cos(math.pi/12))
             center = optical_to_world @ tvec.flatten() + [0, .127, 0] - .05*normal
-            item = ITEMS[int(marker)//4]
+            item = ITEMS[(int(marker) - MARKER_START_ID)//4]
             self.assertAlmostEqual(center[0], item['x'], delta=.025)
             self.assertAlmostEqual(center[2], item['z'], delta=.05)
 

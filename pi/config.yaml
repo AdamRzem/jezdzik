@@ -38,7 +38,8 @@ tracking:
   max_speed_m_s: 0.3
   max_turn_deg_s: 60
 markers:
-  dictionary: DICT_4X4_50
+  dictionary: DICT_4X4_100
+  start_id: 10
   side_m: 0.08
   cube_m: 0.10
   item_count: 12

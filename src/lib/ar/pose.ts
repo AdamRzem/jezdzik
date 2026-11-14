@@ -52,10 +52,22 @@ export class PoseClient {
 	private bestRtt = Infinity;
 	private pingTimer: ReturnType<typeof setInterval> | undefined;
 	private counter = 0;
-	framePose(now: number): Pose | undefined {
+	framePose(now: number): Pose {
 		const target = now - this.offset - Number(localStorage.getItem('rover.videoDelayMs') || 0);
 		const h = this.history;
-		if (!h.length || target < h[0].time || target > h[h.length - 1].time + 50) return;
+		// Marker PnP works without IMU data. Use the configured camera mounting
+		// with neutral rover attitude while calibration or samples are unavailable.
+		const pose: Pose = {
+			e: this.epoch,
+			f: this.counter++ % 65536,
+			x: 0,
+			z: 0,
+			yaw: 0,
+			pitch: 0,
+			roll: 0,
+			q: 0
+		};
+		if (!h.length || target < h[0].time || target > h[h.length - 1].time + 50) return pose;
 		let q = h[h.length - 1].q;
 		for (let i = 1; i < h.length; i++)
 			if (h[i].time >= target) {
@@ -68,7 +80,7 @@ export class PoseClient {
 				q = q.map((v) => v / n);
 				break;
 			}
-		return { e: this.epoch, f: this.counter++ % 65536, x: 0, z: 0, q: 0, ...angles(q) };
+		return { ...pose, ...angles(q) };
 	}
 
 	private timer: ReturnType<typeof setTimeout> | undefined;
