@@ -21,7 +21,8 @@
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"storybook": "storybook dev -p 6006",
-		"build-storybook": "storybook build"
+		"build-storybook": "storybook build",
+		"models": "node tools/make_models.mjs"
 	},
 	"devDependencies": {
 		"@chromatic-com/storybook": "latest",

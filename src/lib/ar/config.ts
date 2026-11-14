@@ -25,10 +25,25 @@ export const DEPTH = {
 	minInliers: 0.4,
 	tolerance: 0.05
 };
-export const ITEM_TYPES = Array.from({ length: MARKER.count }, (_, id) => ({
-	id,
-	name: ['Basalt', 'Sandstone', 'Jade'][id % 3],
-	color: ['#a1aab5', '#d2a768', '#71978c'][id % 3],
-	// Set to a local /assets/*.glb to replace the bundled procedural rock.
-	model: null as string | null
-}));
+// Pathfinder rocks stylised to hide a 10 cm cube (origin on the floor, centred).
+const COVER_ROCKS = [
+	['barnacle-bill', 'Barnacle Bill'],
+	['yogi', 'Yogi'],
+	['scooby-doo', 'Scooby-Doo'],
+	['wedge', 'Wedge'],
+	['shark', 'Shark'],
+	['half-dome', 'Half Dome'],
+	['moe', 'Moe'],
+	['stimpy', 'Stimpy'],
+	['chimp', 'Chimp']
+] as const;
+export const ITEM_TYPES = Array.from({ length: MARKER.count }, (_, id) => {
+	const [file, name] = COVER_ROCKS[id % COVER_ROCKS.length];
+	return {
+		id,
+		name,
+		color: ['#a1aab5', '#d2a768', '#71978c'][id % 3],
+		// The procedural rock is shown until this loads, and kept if it fails.
+		model: `/assets/models/cover/${file}.glb` as string | null
+	};
+});

@@ -1,0 +1,419 @@
+{
+	"frame": "Lander at the origin. east and north are metres at true scale. In Three.js use x = east, y = up, z = -north.",
+	"confidence": {
+		"sourced": "Stated by the cited source.",
+		"approximate": "Placed by eye or from memory. NOT verified; check before presenting as fact."
+	},
+	"facts": {
+		"landing": "4 July 1997, Ares Vallis",
+		"lastTransmission": "27 September 1997",
+		"roverSize": "65 x 48 x 30 cm, six wheels of 13 cm diameter",
+		"roverTopSpeed": "1 cm/s",
+		"roverDistance": "about 100 m in total, always within about 12 m of the lander",
+		"cameraMast": "camera about 1.5 m above the ground on a 0.8 m pop-up mast",
+		"landerSize": "about 2.75 m across with petals open (approximate, not re-checked)"
+	},
+	"lander": {
+		"east": 0,
+		"north": 0,
+		"yawDeg": 120,
+		"yawConfidence": "approximate",
+		"model": "site/lander.glb"
+	},
+	"rocks": [
+		{
+			"id": "yogi",
+			"label": "Yogi",
+			"east": -3.54,
+			"north": 3.54,
+			"size": {
+				"width": 1.25,
+				"height": 0.95,
+				"depth": 1.05
+			},
+			"confidence": {
+				"position": "sourced",
+				"size": "approximate"
+			},
+			"model": "site/yogi.glb",
+			"cover": "cover/yogi.glb",
+			"source": "https://science.nasa.gov/resource/sojourner-barnacle-bill-yogi/",
+			"note": "NASA: a metre-size rock about 5 m northwest of the lander. Exact width, height and depth are approximate."
+		},
+		{
+			"id": "barnacle-bill",
+			"label": "Barnacle Bill",
+			"east": -2.03,
+			"north": 0.84,
+			"size": {
+				"width": 0.36,
+				"height": 0.2,
+				"depth": 0.3
+			},
+			"confidence": {
+				"position": "approximate",
+				"size": "approximate"
+			},
+			"model": "site/barnacle-bill.glb",
+			"cover": "cover/barnacle-bill.glb",
+			"source": "https://science.nasa.gov/resource/sojourner-barnacle-bill-yogi/",
+			"note": "NASA: a small rock immediately west-northwest of the lander. The 2.2 m distance and the size are approximate."
+		},
+		{
+			"id": "scooby-doo",
+			"label": "Scooby-Doo",
+			"east": 1.44,
+			"north": 3.95,
+			"size": {
+				"width": 0.55,
+				"height": 0.14,
+				"depth": 0.45
+			},
+			"confidence": {
+				"position": "approximate",
+				"size": "approximate"
+			},
+			"model": "site/scooby-doo.glb",
+			"cover": "cover/scooby-doo.glb",
+			"source": "https://en.wikipedia.org/wiki/Sojourner_(rover)",
+			"note": "Analysed on sol 14. Its direction and distance from the lander are NOT verified."
+		},
+		{
+			"id": "wedge",
+			"label": "Wedge",
+			"east": -3.39,
+			"north": -2.65,
+			"size": {
+				"width": 0.5,
+				"height": 0.3,
+				"depth": 0.36
+			},
+			"confidence": {
+				"position": "approximate",
+				"size": "approximate"
+			},
+			"model": "site/wedge.glb",
+			"cover": "cover/wedge.glb",
+			"source": "https://www.jpl.nasa.gov/images/pia00901-mosaic-of-wedge-shark-half-dome-moe-and-flat-top/",
+			"note": "In the Rock Garden, southwest of the lander. Position and size approximate."
+		},
+		{
+			"id": "shark",
+			"label": "Shark",
+			"east": -5.24,
+			"north": -3.67,
+			"size": {
+				"width": 0.69,
+				"height": 0.4,
+				"depth": 0.45
+			},
+			"confidence": {
+				"position": "approximate",
+				"size": "sourced"
+			},
+			"model": "site/shark.glb",
+			"cover": "cover/shark.glb",
+			"source": "https://www.jpl.nasa.gov/images/pia00901-mosaic-of-wedge-shark-half-dome-moe-and-flat-top/",
+			"note": "Reported as about 0.69 m wide, 0.40 m high and 6.4 m from the lander, in the Rock Garden to the southwest. The exact bearing and the depth are approximate."
+		},
+		{
+			"id": "half-dome",
+			"label": "Half Dome",
+			"east": -5.86,
+			"north": -3.25,
+			"size": {
+				"width": 0.6,
+				"height": 0.5,
+				"depth": 0.5
+			},
+			"confidence": {
+				"position": "approximate",
+				"size": "approximate"
+			},
+			"model": "site/half-dome.glb",
+			"cover": "cover/half-dome.glb",
+			"source": "https://www.jpl.nasa.gov/images/pia00901-mosaic-of-wedge-shark-half-dome-moe-and-flat-top/",
+			"note": "In the Rock Garden next to Shark. Position and size approximate."
+		},
+		{
+			"id": "moe",
+			"label": "Moe",
+			"east": -6.22,
+			"north": -4.19,
+			"size": {
+				"width": 0.62,
+				"height": 0.42,
+				"depth": 0.5
+			},
+			"confidence": {
+				"position": "approximate",
+				"size": "approximate"
+			},
+			"model": "site/moe.glb",
+			"cover": "cover/moe.glb",
+			"source": "https://www.jpl.nasa.gov/images/pia00901-mosaic-of-wedge-shark-half-dome-moe-and-flat-top/",
+			"note": "In the Rock Garden; shows fluting from wind erosion. Position and size approximate."
+		},
+		{
+			"id": "stimpy",
+			"label": "Stimpy",
+			"east": -5.43,
+			"north": -4.72,
+			"size": {
+				"width": 0.32,
+				"height": 0.2,
+				"depth": 0.26
+			},
+			"confidence": {
+				"position": "approximate",
+				"size": "approximate"
+			},
+			"model": "site/stimpy.glb",
+			"cover": "cover/stimpy.glb",
+			"source": "https://www.jpl.nasa.gov/images/pia00901-mosaic-of-wedge-shark-half-dome-moe-and-flat-top/",
+			"note": "In front of Moe. Position and size approximate."
+		},
+		{
+			"id": "chimp",
+			"label": "Chimp",
+			"east": -6.37,
+			"north": -9.45,
+			"size": {
+				"width": 0.75,
+				"height": 0.3,
+				"depth": 0.6
+			},
+			"confidence": {
+				"position": "approximate",
+				"size": "approximate"
+			},
+			"model": "site/chimp.glb",
+			"cover": "cover/chimp.glb",
+			"source": "https://www.astronomy.com/space-exploration/sojourner-lost-and-found/",
+			"note": "A tabular rock beyond the Rock Garden; the rover was last seen near it. Position and size approximate."
+		}
+	],
+	"points": [
+		{
+			"id": "sojourner-last-known",
+			"label": "Sojourner: last known position",
+			"east": -5.83,
+			"north": -9.33,
+			"confidence": {
+				"position": "approximate"
+			},
+			"source": "https://www.astronomy.com/space-exploration/sojourner-lost-and-found/",
+			"note": "Near the rock Chimp at the final data transmission on 27 September 1997. Sources give 12 m (Wikipedia: always within 12 m) to 13 m (Astronomy) from the lander. Exact spot approximate."
+		},
+		{
+			"id": "sojourner-hirise-candidate",
+			"label": "Sojourner: possible resting place",
+			"east": 0,
+			"north": -6,
+			"confidence": {
+				"position": "sourced"
+			},
+			"source": "https://hirise.lpl.arizona.edu/PSP_001890_1995",
+			"note": "A feature about 6 m due south of the lander in the 21 December 2006 HiRISE image, tentatively identified as the rover. The identification was never confirmed."
+		}
+	],
+	"distant": [
+		{
+			"id": "twin-peaks",
+			"label": "Twin Peaks",
+			"note": "Two hills on the southwestern horizon, about 1 to 2 km away. Not modelled."
+		},
+		{
+			"id": "big-crater",
+			"label": "Big Crater",
+			"note": "About 2200 m away. Not modelled."
+		}
+	],
+	"sources": {
+		"nasaMission": "https://science.nasa.gov/mission/mars-pathfinder/",
+		"nasaYogi": "https://science.nasa.gov/resource/sojourner-barnacle-bill-yogi/",
+		"wikiRover": "https://en.wikipedia.org/wiki/Sojourner_(rover)",
+		"nssdc": "https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1996-068A",
+		"astronomy": "https://www.astronomy.com/space-exploration/sojourner-lost-and-found/",
+		"hirise": "https://hirise.lpl.arizona.edu/PSP_001890_1995",
+		"rockGarden": "https://www.jpl.nasa.gov/images/pia00901-mosaic-of-wedge-shark-half-dome-moe-and-flat-top/"
+	},
+	"models": [
+		{
+			"id": "site-ares-vallis",
+			"group": "site",
+			"label": "Whole landing site",
+			"file": "site/ares-vallis.glb",
+			"triangles": 71132,
+			"note": "Lander, named rocks, both Sojourner positions and a random rock field, at true scale. Rock positions marked approximate in layout.json are not verified."
+		},
+		{
+			"id": "cover-barnacle-bill",
+			"group": "cover",
+			"label": "Barnacle Bill",
+			"file": "cover/barnacle-bill.glb",
+			"triangles": 4800,
+			"note": "Stylised to hide a 10 cm cube. Not to scale."
+		},
+		{
+			"id": "cover-yogi",
+			"group": "cover",
+			"label": "Yogi",
+			"file": "cover/yogi.glb",
+			"triangles": 4800,
+			"note": "Stylised to hide a 10 cm cube. Not to scale."
+		},
+		{
+			"id": "cover-scooby-doo",
+			"group": "cover",
+			"label": "Scooby-Doo",
+			"file": "cover/scooby-doo.glb",
+			"triangles": 4800,
+			"note": "Stylised to hide a 10 cm cube. Not to scale."
+		},
+		{
+			"id": "cover-wedge",
+			"group": "cover",
+			"label": "Wedge",
+			"file": "cover/wedge.glb",
+			"triangles": 4800,
+			"note": "Stylised to hide a 10 cm cube. Not to scale."
+		},
+		{
+			"id": "cover-shark",
+			"group": "cover",
+			"label": "Shark",
+			"file": "cover/shark.glb",
+			"triangles": 4800,
+			"note": "Stylised to hide a 10 cm cube. Not to scale."
+		},
+		{
+			"id": "cover-half-dome",
+			"group": "cover",
+			"label": "Half Dome",
+			"file": "cover/half-dome.glb",
+			"triangles": 4800,
+			"note": "Stylised to hide a 10 cm cube. Not to scale."
+		},
+		{
+			"id": "cover-moe",
+			"group": "cover",
+			"label": "Moe",
+			"file": "cover/moe.glb",
+			"triangles": 4800,
+			"note": "Stylised to hide a 10 cm cube. Not to scale."
+		},
+		{
+			"id": "cover-stimpy",
+			"group": "cover",
+			"label": "Stimpy",
+			"file": "cover/stimpy.glb",
+			"triangles": 588,
+			"note": "Stylised to hide a 10 cm cube. Not to scale."
+		},
+		{
+			"id": "cover-chimp",
+			"group": "cover",
+			"label": "Chimp",
+			"file": "cover/chimp.glb",
+			"triangles": 4800,
+			"note": "Stylised to hide a 10 cm cube. Not to scale."
+		},
+		{
+			"id": "site-yogi",
+			"group": "site",
+			"label": "Yogi (true scale)",
+			"file": "site/yogi.glb",
+			"triangles": 1728,
+			"note": "NASA: a metre-size rock about 5 m northwest of the lander. Exact width, height and depth are approximate."
+		},
+		{
+			"id": "site-barnacle-bill",
+			"group": "site",
+			"label": "Barnacle Bill (true scale)",
+			"file": "site/barnacle-bill.glb",
+			"triangles": 1728,
+			"note": "NASA: a small rock immediately west-northwest of the lander. The 2.2 m distance and the size are approximate."
+		},
+		{
+			"id": "site-scooby-doo",
+			"group": "site",
+			"label": "Scooby-Doo (true scale)",
+			"file": "site/scooby-doo.glb",
+			"triangles": 1728,
+			"note": "Analysed on sol 14. Its direction and distance from the lander are NOT verified."
+		},
+		{
+			"id": "site-wedge",
+			"group": "site",
+			"label": "Wedge (true scale)",
+			"file": "site/wedge.glb",
+			"triangles": 1728,
+			"note": "In the Rock Garden, southwest of the lander. Position and size approximate."
+		},
+		{
+			"id": "site-shark",
+			"group": "site",
+			"label": "Shark (true scale)",
+			"file": "site/shark.glb",
+			"triangles": 1728,
+			"note": "Reported as about 0.69 m wide, 0.40 m high and 6.4 m from the lander, in the Rock Garden to the southwest. The exact bearing and the depth are approximate."
+		},
+		{
+			"id": "site-half-dome",
+			"group": "site",
+			"label": "Half Dome (true scale)",
+			"file": "site/half-dome.glb",
+			"triangles": 1728,
+			"note": "In the Rock Garden next to Shark. Position and size approximate."
+		},
+		{
+			"id": "site-moe",
+			"group": "site",
+			"label": "Moe (true scale)",
+			"file": "site/moe.glb",
+			"triangles": 1728,
+			"note": "In the Rock Garden; shows fluting from wind erosion. Position and size approximate."
+		},
+		{
+			"id": "site-stimpy",
+			"group": "site",
+			"label": "Stimpy (true scale)",
+			"file": "site/stimpy.glb",
+			"triangles": 300,
+			"note": "In front of Moe. Position and size approximate."
+		},
+		{
+			"id": "site-chimp",
+			"group": "site",
+			"label": "Chimp (true scale)",
+			"file": "site/chimp.glb",
+			"triangles": 1728,
+			"note": "A tabular rock beyond the Rock Garden; the rover was last seen near it. Position and size approximate."
+		},
+		{
+			"id": "site-lander",
+			"group": "site",
+			"label": "Carl Sagan Memorial Station (lander)",
+			"file": "site/lander.glb",
+			"triangles": 5600,
+			"note": "Open lander with ramps, camera mast and deflated airbags. Layout is schematic; overall size is approximate."
+		},
+		{
+			"id": "site-sojourner",
+			"group": "site",
+			"label": "Sojourner",
+			"file": "site/sojourner.glb",
+			"triangles": 488,
+			"note": "65 x 48 x 30 cm with six 13 cm wheels (sourced). Detail is schematic."
+		},
+		{
+			"id": "site-ground",
+			"group": "site",
+			"label": "Ground",
+			"file": "site/ground.glb",
+			"triangles": 8192,
+			"note": "Flat 30 m soil patch, for an optional floor overlay."
+		}
+	]
+}
