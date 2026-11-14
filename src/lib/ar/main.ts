@@ -221,14 +221,14 @@ export class Viewer {
 			let frame: number | null;
 			if (real) {
 				pose = this.socket!.framePose(presentationTime);
-				frame = pose?.f ?? null;
-				if (pose) this.poses.push(pose);
+				frame = pose.f;
+				this.poses.push(pose);
 			} else {
 				this.readbackContext.drawImage(bitmap, 0, 0, 416, 16, 0, 0, 416, 16);
 				frame = decodeStamp(this.readbackContext.getImageData(0, 0, 416, 16));
 				pose = frame === null ? undefined : this.poses.get(frame, epoch);
 			}
-			const decision = real ? (pose ? 'matched' : 'video-only') : this.sync.decide(frame, pose);
+			const decision = real ? 'matched' : this.sync.decide(frame, pose);
 			this.state.unknown = this.sync.unknown;
 			if (decision === 'hold' || decision === 'repeat') return;
 			if (decision === 'video-only') {
