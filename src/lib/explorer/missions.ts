@@ -11,6 +11,7 @@ export type Mission = {
 	source: string;
 	location: { type: 'surface'; lat: number; lon: number } | { type: 'orbit' | 'trajectory' };
 	play?: '/play';
+	story?: '/story';
 };
 const nasa = (slug: string) => `https://science.nasa.gov/mission/${slug}/`;
 function surface(
@@ -53,7 +54,8 @@ export const missions: Mission[] = [
 			'Small wheels. An enormous first step. Sojourner proved that a robot could roam another planet, opening the way for every Mars rover that followed.',
 			'The rover and its Pathfinder lander remain in Ares Vallis.'
 		),
-		play: '/play'
+		play: '/play',
+		story: '/story'
 	},
 	surface(
 		'mer-spirit',
