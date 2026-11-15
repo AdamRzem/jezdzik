@@ -6,7 +6,11 @@
 	import { onMount, type Snippet } from 'svelte';
 	import type { StoryEngine } from './engine.svelte';
 
-	let { engine, controls }: { engine: StoryEngine; controls?: Snippet } = $props();
+	let {
+		engine,
+		controls,
+		minimap
+	}: { engine: StoryEngine; controls?: Snippet; minimap?: Snippet } = $props();
 
 	const step = $derived(engine.step);
 	const missions = $derived(
@@ -35,6 +39,11 @@
 	}
 
 	function onkeydown(event: KeyboardEvent) {
+		if (
+			event.target instanceof HTMLElement &&
+			event.target.closest('button, a, input, select, textarea')
+		)
+			return;
 		if (event.key === ' ' || event.key === 'Enter') {
 			event.preventDefault();
 			next();
@@ -72,7 +81,9 @@
 	</span>
 {/snippet}
 
-<div class="pointer-events-none absolute inset-0 flex flex-col font-mono text-amber-100">
+<div
+	class="pointer-events-none absolute inset-0 flex flex-col overflow-y-auto font-mono text-amber-100"
+>
 	<!-- Top bar -->
 	<header
 		class="flex items-center justify-between gap-3 bg-gradient-to-b from-black/80 to-transparent p-4"
@@ -87,7 +98,8 @@
 	</header>
 	{@render controls?.()}
 
-	<div class="flex min-h-0 flex-1 items-start justify-end p-4">
+	<div class="flex flex-1 shrink-0 flex-wrap items-start justify-end gap-3 p-4">
+		{@render minimap?.()}
 		<!-- Mission log -->
 		<aside class="{panel} hidden w-56 p-3 text-sm md:block">
 			<div class="mb-2 text-xs tracking-widest text-amber-300/80 uppercase">Mission log</div>
@@ -111,7 +123,7 @@
 
 	<!-- Bottom area -->
 	<footer
-		class="flex flex-col items-center gap-3 bg-gradient-to-t from-black/80 to-transparent p-4"
+		class="flex shrink-0 flex-col items-center gap-3 bg-gradient-to-t from-black/80 to-transparent p-4"
 	>
 		{#if engine.stage === 'done'}
 			<section class="{panel} max-w-2xl p-6 text-center">
