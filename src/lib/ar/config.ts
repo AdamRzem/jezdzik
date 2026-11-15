@@ -7,7 +7,8 @@ export const CAMERA = {
 	cx: 640,
 	cy: 360,
 	heightM: 0.119,
-	tilt: (10 * Math.PI) / 180,
+	// Measured from the live view (a 10 cm cube 1.5 m ahead): about 4° down, not the planned 10°.
+	tilt: (4 * Math.PI) / 180,
 	// The rover's camera is mounted upside down. Live frames are turned upright once,
 	// at capture, so markers, depth and floor tracking all see the same upright image.
 	// Set to false if the flip is ever done on the Pi (rpiCameraHFlip + rpiCameraVFlip).

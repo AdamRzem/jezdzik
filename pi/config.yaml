@@ -22,7 +22,7 @@ camera:
   cy: 360 # Placeholder.
   distortion: null # Must be calibrated; zero is not a measurement.
   height_m: 0.119
-  tilt_deg: 10
+  tilt_deg: 4
 imu:
   bus: 1
   address: 0x68
