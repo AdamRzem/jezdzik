@@ -10,7 +10,7 @@
 //   tick(seconds)                  call every frame; drives the analyse timer
 
 import { labelOf, phraseOf } from './world';
-import type { Step } from './types';
+import type { Photo, Reading, Step } from './types';
 
 export type Stage =
 	'message' | 'travel' | 'scan' | 'grab' | 'deliver' | 'media' | 'result' | 'done';
@@ -34,6 +34,28 @@ export class StoryEngine {
 
 	get step(): Step {
 		return this.steps[this.index];
+	}
+
+	/** The real photo that belongs to a step, if it has one. */
+	static photoOf(step: Step): Photo | null {
+		if (step.kind === 'goto') return step.media.kind === 'image' ? step.media : null;
+		return step.memory ?? null;
+	}
+
+	// Photos of the steps completed so far, in story order: the album.
+	get memories(): { title: string; photo: Photo }[] {
+		return this.steps
+			.filter((step) => this.completed.includes(step.id))
+			.flatMap((step) => {
+				const photo = StoryEngine.photoOf(step);
+				return photo ? [{ title: step.title, photo }] : [];
+			});
+	}
+
+	// The real measurement for the rock being analysed.
+	get reading(): Reading | null {
+		const s = this.step;
+		return (s.kind === 'analyse' || s.kind === 'place') && s.reading ? s.reading : null;
 	}
 
 	// What the driver should be looking for right now, for highlighting in AR.

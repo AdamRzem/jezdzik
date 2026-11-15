@@ -15,6 +15,14 @@ export const DEMO_ITEMS = [
 // target is roughly ahead of the last. Items 0-2 keep their demo positions.
 export const COURSE_ITEMS = [
 	...DEMO_ITEMS,
+	// The Rock Garden's real named rocks, gathered behind point B, and Chimp beside
+	// point C, where the story says the rover was last seen. Scenery only.
+	{ id: 3, x: -1.15, z: -1.45, yaw: 0.4 }, // Wedge
+	{ id: 4, x: -1.3, z: -1.95, yaw: -0.2 }, // Shark
+	{ id: 5, x: -1.05, z: -2.3, yaw: 0.6 }, // Half Dome
+	{ id: 6, x: -1.5, z: -1.6, yaw: 0.1 }, // Moe
+	{ id: 7, x: -1.45, z: -2.35, yaw: -0.5 }, // Stimpy
+	{ id: 8, x: 1.15, z: -1.9, yaw: 0.3 }, // Chimp
 	{ id: 9, x: 0.95, z: -3.4, yaw: 0.2 }, // seismometer
 	{ id: 10, x: 1.35, z: -2.9, yaw: 0 }, // wind and thermal shield
 	{ id: 11, x: 0.9, z: -2.7, yaw: 0.1 }, // heat probe
