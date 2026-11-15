@@ -6,16 +6,20 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
-	import { Viewer } from '#lib/ar/main.js';
+	import { Viewer, initialStatus } from '#lib/ar/main.js';
 	import type { ViewerStatus } from '#lib/ar/types.js';
 	import { StoryEngine } from '../../lib/story/engine.svelte';
 	import { storyFor } from '../../lib/story/missions';
 	import { idOfItem, itemOf } from '../../lib/story/world';
 	import Hud from '../../lib/story/Hud.svelte';
+	import Minimap from '../../lib/story/Minimap.svelte';
+	import { emptyMapMemory, rememberMap, FRESH_MS } from '../../lib/story/minimap';
 
 	const story = $derived(storyFor(page.url.searchParams.get('mission')));
 	const engine = $derived(new StoryEngine(story.steps));
-	const FRESH_MS = 1500; // an item counts as "in view" if seen this recently
+	let mapStatus = $state(initialStatus());
+	let mapMemory = $state(emptyMapMemory());
+	let mapNow = $state(0);
 
 	let canvas: HTMLCanvasElement;
 	let video: HTMLVideoElement;
@@ -41,6 +45,9 @@
 	}
 
 	function feed(status: ViewerStatus) {
+		mapStatus = status;
+		mapMemory = rememberMap(mapMemory, status);
+		mapNow = performance.now();
 		waiting = status.mode === 'live' && status.frame === null;
 		// Simulation only: a carried object travels with the rover.
 		viewer?.carry(engine.carrying ? itemOf(engine.carrying) : null);
@@ -112,6 +119,9 @@
 	{/if}
 
 	<Hud {engine}>
+		{#snippet minimap()}
+			<Minimap {engine} status={mapStatus} memory={mapMemory} now={mapNow} />
+		{/snippet}
 		{#snippet controls()}
 			<div
 				class="pointer-events-auto mx-4 flex shrink-0 flex-col items-start gap-2 font-mono text-xs text-amber-100/70"
