@@ -11,15 +11,16 @@ import {
 	rectifiedToRaw
 } from './rectify';
 import type { Pose } from './types';
+const HALF = MARKER.cubeM / 2; // a marker sits on a face, half a cube from the centre
 const pose: Pose = { e: 1, f: 1, x: 0, z: 0, yaw: 0, pitch: 0, roll: 0, q: 2 };
 
 describe('shared camera convention', () => {
 	it.each([
-		// Rows for a camera 11.9 cm above the floor, tilted 4° down.
-		[0.5, 635],
-		[1, 441],
-		[2, 343],
-		[3, 310]
+		// Rows for a camera 11.9 cm above the floor, tilted 10° down.
+		[0.5, 458],
+		[1, 267],
+		[2, 168],
+		[3, 134]
 	])('projects a floor mark %sm ahead at the planned row', (distance, row) => {
 		const p = new Vector3(0, 0, -distance)
 			.applyMatrix4(cameraWorld(pose).invert())
@@ -49,7 +50,7 @@ describe('shared camera convention', () => {
 	});
 	it('converts OpenCV marker coordinates to a cube centre using the detection frame', () => {
 		const moving = { ...pose, x: 0.2, yaw: 0.1 },
-			worldMarker = new Matrix4().makeTranslation(-0.1, 0.05, -0.95);
+			worldMarker = new Matrix4().makeTranslation(-0.1, HALF, -1 + HALF);
 		const m = cameraWorld(moving).invert().multiply(worldMarker).elements;
 		const item = markerToItem(
 			{
@@ -70,7 +71,7 @@ describe('shared camera convention', () => {
 			const angle = yaw + ((offset % 4) * Math.PI) / 2;
 			const normal = new Vector3(-Math.sin(angle), 0, -Math.cos(angle));
 			const world = new Matrix4().makeRotationY(angle + Math.PI);
-			world.setPosition(new Vector3(0.2, 0.05, -1).addScaledVector(normal, 0.05));
+			world.setPosition(new Vector3(0.2, HALF, -1).addScaledVector(normal, HALF));
 			const m = cameraWorld(pose).invert().multiply(world).elements;
 			const item = markerToItem(
 				{

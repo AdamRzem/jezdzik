@@ -31,7 +31,7 @@ The browser expects the exact interfaces in sections 5–6 of the plan:
 - Pose messages at `/ws`, keyed by world epoch and frame number. The buffer holds
   120 poses. A new epoch clears objects, poses, floor fits and stamp state; worker
   results from older epochs are discarded.
-- A camera mounted 0.119 m above the floor with a 4° downward tilt. Intrinsics,
+- A camera mounted 0.119 m above the floor with a 10° downward tilt. Intrinsics,
   geometry, marker tables and distortion are in `src/lib/ar/config.ts`. Optical
   centre and distortion are still **provisional** and require real calibration.
 
@@ -69,7 +69,7 @@ Procedural low-poly rocks and soft shadows are bundled. Set an item's `model` UR
 in `src/lib/ar/config.ts` to use your own local GLB with the plan's size/origin
 convention; a missing GLB keeps the bundled rock.
 
-The marker worker uses full-resolution raw frames and `DICT_4X4_100` with 80 mm
+The marker worker uses full-resolution raw frames and `DICT_4X4_100` with 31 mm
 markers. Poses are solved with distortion-aware IPPE square PnP and converted
 using the capture frame's pose. Display smoothing never feeds observations sent
 back to the Pi. Occlusion rescales relative inverse depth against the known floor;
@@ -94,7 +94,7 @@ on the floor. Internal object IDs remain 0–11.
 | 50–53      | SEIS shield   |
 | 54–57      | Heat probe    |
 
-Place the four markers upright and centered on a 10 cm cube's vertical faces.
+Place the four markers upright and centered on a 4 cm cube's vertical faces.
 For object `i`, the IDs are `10 + 4i + side`, where side is 0–3. In the
 Y-up world convention, face `side` has outward normal
 `(-sin(yaw + side × π/2), 0, -cos(yaw + side × π/2))`.

@@ -22,7 +22,7 @@ camera:
   cy: 360 # Placeholder.
   distortion: null # Must be calibrated; zero is not a measurement.
   height_m: 0.119
-  tilt_deg: 4
+  tilt_deg: 10
 imu:
   bus: 1
   address: 0x68
@@ -40,6 +40,6 @@ tracking:
 markers:
   dictionary: DICT_4X4_100
   start_id: 10
-  side_m: 0.08
-  cube_m: 0.10
+  side_m: 0.031
+  cube_m: 0.04
   item_count: 12

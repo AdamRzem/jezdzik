@@ -7,8 +7,7 @@ export const CAMERA = {
 	cx: 640,
 	cy: 360,
 	heightM: 0.119,
-	// Measured from the live view (a 10 cm cube 1.5 m ahead): about 4° down, not the planned 10°.
-	tilt: (4 * Math.PI) / 180,
+	tilt: (10 * Math.PI) / 180,
 	// The rover's camera is mounted upside down. Live frames are turned upright once,
 	// at capture, so markers, depth and floor tracking all see the same upright image.
 	// Set to false if the flip is ever done on the Pi (rpiCameraHFlip + rpiCameraVFlip).
@@ -21,8 +20,10 @@ export const CAMERA = {
 } as const;
 export const STAMP = { blocks: 26, size: 16, white: 235, black: 16 } as const;
 export const MARKER = {
-	sideM: 0.08,
-	cubeM: 0.1,
+	// The cubes are 40 mm and the marker's black square is about 31 mm (team-measured).
+	// A wrong marker size puts every model too near or too far by the same percentage.
+	sideM: 0.031,
+	cubeM: 0.04,
 	dictionary: 'DICT_4X4_100',
 	startId: 10,
 	lostAfterMs: 500,
@@ -46,6 +47,8 @@ export const DEPTH = {
 	minInliers: 0.4,
 	tolerance: 0.05
 };
+// The cover models were drawn to hide a 10 cm cube; they are shrunk to fit the real one.
+export const MODEL_SCALE = MARKER.cubeM / 0.1;
 // Models stylised to hide a 10 cm cube (origin on the floor, centred).
 // The order is the item number: item i carries markers startId + 4i to startId + 4i + 3.
 // Items 0-11 are rocks and instruments; 12-17 are the story's waypoints A-F.

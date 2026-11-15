@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import { CAMERA, DEPTH } from './config';
+import { CAMERA, DEPTH, MARKER, MODEL_SCALE } from './config';
 import { cameraWorld, floorDepth, floorPlane, rawToRectified, rectifiedToRaw } from './rectify';
 import type { DepthResult, Pose, TrackedItem } from './types';
 
@@ -62,8 +62,8 @@ export function maskDepth(z: number, zFloor: number, itemNear?: number) {
 	return z;
 }
 
-const MODEL_RADIUS = 0.17;
-const MODEL_HEIGHT = 0.2;
+const MODEL_RADIUS = 0.17 * MODEL_SCALE;
+const MODEL_HEIGHT = 0.2 * MODEL_SCALE;
 
 /** The middle value of a few depth readings, or undefined when there are none. */
 export function median(values: number[]) {
@@ -75,7 +75,7 @@ function itemBoxes(items: TrackedItem[], pose: Pose) {
 	const inverse = cameraWorld(pose).invert();
 	return items
 		.map((item) => {
-			const center = new Vector3(item.x, 0.05, item.z).applyMatrix4(inverse);
+			const center = new Vector3(item.x, MARKER.cubeM / 2, item.z).applyMatrix4(inverse);
 			if (-center.z <= CAMERA.near) return null;
 			const points: { u: number; v: number }[] = [];
 			// The area the model can cover, which is larger than the cube that carries the marker.

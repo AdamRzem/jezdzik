@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CAMERA } from './config';
+import { CAMERA, MARKER } from './config';
 import { drawStamp } from './framestamp';
 import { cameraWorld, floorDepth, floorPlane } from './rectify';
 import { calibratedCamera, disposeObject, setCameraPose } from './scene';
@@ -126,10 +126,10 @@ export class DemoSource {
 		}
 		for (const item of this.items) {
 			const cube = new THREE.Mesh(
-				new THREE.BoxGeometry(0.1, 0.1, 0.1),
+				new THREE.BoxGeometry(MARKER.cubeM, MARKER.cubeM, MARKER.cubeM),
 				new THREE.MeshStandardMaterial({ color: '#e5e4d8', roughness: 0.9 })
 			);
-			cube.position.set(item.x, 0.05, item.z);
+			cube.position.set(item.x, MARKER.cubeM / 2, item.z);
 			this.scene.add(cube);
 			this.cubes.set(item.id, cube);
 		}
@@ -173,7 +173,7 @@ export class DemoSource {
 			if (held) {
 				held.x = x - Math.sin(yaw) * CARRY_AHEAD;
 				held.z = z - Math.cos(yaw) * CARRY_AHEAD;
-				this.cubes.get(held.id)?.position.set(held.x, 0.05, held.z);
+				this.cubes.get(held.id)?.position.set(held.x, MARKER.cubeM / 2, held.z);
 			}
 		}
 		const pose: Pose = {
@@ -205,8 +205,8 @@ export class DemoSource {
 			...this.items.map(
 				(item) =>
 					new THREE.Box3(
-						new THREE.Vector3(item.x - 0.05, 0, item.z - 0.05),
-						new THREE.Vector3(item.x + 0.05, 0.1, item.z + 0.05)
+						new THREE.Vector3(item.x - MARKER.cubeM / 2, 0, item.z - MARKER.cubeM / 2),
+						new THREE.Vector3(item.x + MARKER.cubeM / 2, MARKER.cubeM, item.z + MARKER.cubeM / 2)
 					)
 			),
 			new THREE.Box3(

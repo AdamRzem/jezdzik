@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { CAMERA, ITEM_TYPES } from './config';
+import { CAMERA, ITEM_TYPES, MODEL_SCALE } from './config';
 import { makeGround } from './ground';
 import { cameraWorld, DISTORT_GLSL, projectionMatrix, rectifiedToRaw } from './rectify';
 import type { OcclusionFrame } from './occlusion';
@@ -273,6 +273,7 @@ gl_FragColor=vec4(0.0);}`
 			}
 			model.position.set(item.x, 0, item.z);
 			model.rotation.y = item.yaw;
+			model.scale.setScalar(MODEL_SCALE);
 		}
 	}
 	/** Simulated and mock video carry a frame-number stamp in the corner; real video does not. */
