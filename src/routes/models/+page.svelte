@@ -16,7 +16,7 @@
 
 	const BASE = '/assets/models/';
 	// Height of the rover's camera lens above the floor, from the implementation plan.
-	const CAMERA_HEIGHT = 0.137;
+	const CAMERA_HEIGHT = 0.119;
 
 	let canvas = $state<HTMLCanvasElement>();
 	let models = $state<Model[]>([]);

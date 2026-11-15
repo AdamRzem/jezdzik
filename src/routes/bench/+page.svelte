@@ -145,7 +145,7 @@
 			<h2>All processing stays here.</h2>
 			<p>
 				Uses the locally installed Depth Anything V2 Small model on this device's GPU. The test
-				assumes a stationary camera at 0.137 m and a 10° downward tilt.
+				assumes a stationary camera at 0.119 m and a 10° downward tilt.
 			</p>
 			<button class="primary-button" onclick={run} disabled={!supported || running}
 				>{running ? 'Measuring…' : 'Run benchmark'}<Icon name="arrow" size={16} /></button

@@ -6,7 +6,7 @@ export const CAMERA = {
 	fy: 1662.4,
 	cx: 640,
 	cy: 360,
-	heightM: 0.137,
+	heightM: 0.119,
 	tilt: (10 * Math.PI) / 180,
 	// The rover's camera is mounted upside down. Live frames are turned upright once,
 	// at capture, so markers, depth and floor tracking all see the same upright image.

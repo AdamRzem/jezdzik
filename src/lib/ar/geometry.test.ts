@@ -15,11 +15,11 @@ const pose: Pose = { e: 1, f: 1, x: 0, z: 0, yaw: 0, pitch: 0, roll: 0, q: 2 };
 
 describe('shared camera convention', () => {
 	it.each([
-		// Rows for a camera 13.7 cm above the floor, tilted 10° down.
-		[0.5, 515],
-		[1, 296],
-		[2, 183],
-		[3, 145]
+		// Rows for a camera 11.9 cm above the floor, tilted 10° down.
+		[0.5, 458],
+		[1, 267],
+		[2, 168],
+		[3, 134]
 	])('projects a floor mark %sm ahead at the planned row', (distance, row) => {
 		const p = new Vector3(0, 0, -distance)
 			.applyMatrix4(cameraWorld(pose).invert())

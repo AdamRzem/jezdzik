@@ -31,7 +31,7 @@ The browser expects the exact interfaces in sections 5–6 of the plan:
 - Pose messages at `/ws`, keyed by world epoch and frame number. The buffer holds
   120 poses. A new epoch clears objects, poses, floor fits and stamp state; worker
   results from older epochs are discarded.
-- A camera mounted 0.127 m above the floor with a 10° downward tilt. Intrinsics,
+- A camera mounted 0.119 m above the floor with a 10° downward tilt. Intrinsics,
   geometry, marker tables and distortion are in `src/lib/ar/config.ts`. Optical
   centre and distortion are still **provisional** and require real calibration.
 
